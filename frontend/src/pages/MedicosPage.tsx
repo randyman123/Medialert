@@ -58,9 +58,19 @@ export function MedicosPage() {
           <strong>{especialidadNombre || 'Sin especialidad'}</strong>
         </p>
 
-        <div style={{ margin: '16px 0 24px' }}>
+        <div
+          style={{
+            display: 'flex',
+            gap: '12px',
+            flexWrap: 'wrap',
+            margin: '16px 0 24px',
+          }}
+        >
+          <Link to="/dashboard" style={{ color: '#16a34a' }}>
+            Volver al dashboard
+          </Link>
           <Link to="/especialidades" style={{ color: '#16a34a' }}>
-            Cambiar especialidad
+            Volver a especialidades
           </Link>
         </div>
 
@@ -94,7 +104,9 @@ export function MedicosPage() {
               ))}
             </div>
           ) : (
-            <p>No hay médicos para esta especialidad.</p>
+            <p style={{ color: '#4f677a' }}>
+              No encontramos médicos para esta especialidad por ahora.
+            </p>
           )
         ) : null}
       </section>

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { DashboardLayout } from '../layouts/DashboardLayout'
 import {
   especialidadesService,
@@ -49,29 +49,41 @@ export function EspecialidadesPage() {
           Selecciona una especialidad para ver los médicos disponibles.
         </p>
 
+        <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', marginTop: '20px' }}>
+          <Link to="/dashboard" style={{ color: '#16a34a' }}>
+            Volver al dashboard
+          </Link>
+        </div>
+
         {isLoading ? <p>Cargando especialidades...</p> : null}
         {error ? <p style={{ color: '#b91c1c' }}>{error}</p> : null}
 
         {!isLoading && !error ? (
-          <div style={{ display: 'grid', gap: '12px', marginTop: '24px' }}>
-            {especialidades.map((especialidad) => (
-              <button
-                key={especialidad.id}
-                type="button"
-                onClick={() => handleSelect(especialidad)}
-                style={{
-                  textAlign: 'left',
-                  border: '1px solid #d9e6f2',
-                  backgroundColor: '#ffffff',
-                  borderRadius: '14px',
-                  padding: '16px',
-                  cursor: 'pointer',
-                }}
-              >
-                {especialidad.nombre}
-              </button>
-            ))}
-          </div>
+          especialidades.length > 0 ? (
+            <div style={{ display: 'grid', gap: '12px', marginTop: '24px' }}>
+              {especialidades.map((especialidad) => (
+                <button
+                  key={especialidad.id}
+                  type="button"
+                  onClick={() => handleSelect(especialidad)}
+                  style={{
+                    textAlign: 'left',
+                    border: '1px solid #d9e6f2',
+                    backgroundColor: '#ffffff',
+                    borderRadius: '14px',
+                    padding: '16px',
+                    cursor: 'pointer',
+                  }}
+                >
+                  {especialidad.nombre}
+                </button>
+              ))}
+            </div>
+          ) : (
+            <p style={{ marginTop: '24px', color: '#4f677a' }}>
+              Todavía no hay especialidades para mostrar.
+            </p>
+          )
         ) : null}
       </section>
     </DashboardLayout>
