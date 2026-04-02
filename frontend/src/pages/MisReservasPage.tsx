@@ -1,22 +1,26 @@
 import { useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
+import { useAuth } from '../hooks/useAuth'
 import { DashboardLayout } from '../layouts/DashboardLayout'
 import { reservasService, type Reserva } from '../services/reservas.service'
-
-function formatDate(value: string) {
-  return new Date(value).toLocaleString('es-CL', {
-    dateStyle: 'medium',
-    timeStyle: 'short',
-  })
-}
+import { canViewMisReservas } from '../utils/auth'
+import { formatDateTime } from '../utils/format'
 
 export function MisReservasPage() {
+  const { role } = useAuth()
   const [reservas, setReservas] = useState<Reserva[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState('')
   const [successMessage, setSuccessMessage] = useState('')
   const [cancelingId, setCancelingId] = useState<number | null>(null)
+  const showMisReservas = canViewMisReservas(role)
 
   useEffect(() => {
+    if (!showMisReservas) {
+      setIsLoading(false)
+      return
+    }
+
     const cargarReservas = async () => {
       try {
         const data = await reservasService.listarMis()
@@ -34,7 +38,7 @@ export function MisReservasPage() {
     }
 
     void cargarReservas()
-  }, [])
+  }, [showMisReservas])
 
   const handleCancelar = async (reservaId: number) => {
     setCancelingId(reservaId)
@@ -62,14 +66,40 @@ export function MisReservasPage() {
       <section>
         <h2 style={{ marginTop: 0, color: '#123047' }}>Mis reservas</h2>
         <p style={{ color: '#4f677a' }}>
-          Aquí puedes revisar tus reservas activas y cancelarlas si es necesario.
+          {showMisReservas
+            ? 'Aquí puedes revisar tus reservas activas y cancelarlas si es necesario.'
+            : 'Esta vista no aplica para tu perfil actual.'}
         </p>
 
-        {isLoading ? <p>Cargando reservas...</p> : null}
-        {successMessage ? <p style={{ color: '#15803d' }}>{successMessage}</p> : null}
-        {error ? <p style={{ color: '#b91c1c' }}>{error}</p> : null}
+        <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', margin: '16px 0 24px' }}>
+          <Link to="/dashboard" style={{ color: '#16a34a' }}>
+            Volver al inicio
+          </Link>
+        </div>
 
-        {!isLoading && !error ? (
+        {!showMisReservas ? (
+          <section
+            style={{
+              padding: '20px',
+              borderRadius: '16px',
+              backgroundColor: '#f8fafc',
+              border: '1px solid #d9e6f2',
+            }}
+          >
+            <p style={{ margin: 0, color: '#4f677a' }}>
+              Si necesitas revisar el flujo completo, puedes volver al inicio y
+              continuar desde especialidades.
+            </p>
+          </section>
+        ) : null}
+
+        {showMisReservas && isLoading ? <p>Cargando reservas...</p> : null}
+        {showMisReservas && successMessage ? (
+          <p style={{ color: '#15803d' }}>{successMessage}</p>
+        ) : null}
+        {showMisReservas && error ? <p style={{ color: '#b91c1c' }}>{error}</p> : null}
+
+        {showMisReservas && !isLoading && !error ? (
           reservas.length > 0 ? (
             <div style={{ display: 'grid', gap: '14px', marginTop: '24px' }}>
               {reservas.map((reserva) => (
@@ -86,7 +116,7 @@ export function MisReservasPage() {
                     {reserva.medico.nombreCompleto}
                   </strong>
                   <p style={{ margin: '8px 0', color: '#4f677a' }}>
-                    Fecha: {formatDate(reserva.bloqueHorario.inicio)}
+                    Fecha: {formatDateTime(reserva.bloqueHorario.inicio)}
                   </p>
                   <p style={{ margin: '8px 0', color: '#4f677a' }}>
                     Estado: {reserva.estado}
@@ -116,7 +146,20 @@ export function MisReservasPage() {
               ))}
             </div>
           ) : (
-            <p style={{ marginTop: '24px' }}>No tienes reservas activas.</p>
+            <section
+              style={{
+                marginTop: '24px',
+                padding: '20px',
+                borderRadius: '16px',
+                backgroundColor: '#f8fafc',
+                border: '1px solid #d9e6f2',
+              }}
+            >
+              <p style={{ margin: 0, color: '#4f677a' }}>
+                Aún no tienes reservas activas. Puedes volver al inicio y crear
+                una nueva reserva cuando quieras.
+              </p>
+            </section>
           )
         ) : null}
       </section>
