@@ -1,5 +1,6 @@
 import { Column, Entity, ManyToOne, PrimaryGeneratedColumn } from 'typeorm';
 import { Medico } from '../../medicos/entities/medico.entity';
+import { ModalidadAtencion } from '../../common/enums/modalidad-atencion.enum';
 
 export type EstadoBloque = 'DISPONIBLE' | 'RESERVADO' | 'BLOQUEADO';
 
@@ -23,4 +24,11 @@ export class BloqueHorario {
     default: 'DISPONIBLE',
   })
   estado!: EstadoBloque;
+
+  @Column({
+    type: 'enum',
+    enum: ModalidadAtencion,
+    default: ModalidadAtencion.PRESENCIAL,
+  })
+  modalidad!: ModalidadAtencion;
 }

@@ -5,6 +5,7 @@ import { Especialidad } from './entities/especialidad.entity';
 import { CreateEspecialidadeDto } from './dto/create-especialidade.dto';
 import { Medico } from 'src/medicos/entities/medico.entity';
 import { BloqueHorario } from 'src/bloques-horarios/entities/bloques-horario.entity';
+import { ModalidadAtencion } from 'src/common/enums/modalidad-atencion.enum';
 
 @Injectable()
 export class EspecialidadesService {
@@ -25,6 +26,30 @@ export class EspecialidadesService {
 
   findAll() {
     return this.repo.find({ order: { id: 'DESC' } });
+  }
+
+  findAllDisponiblesPorModalidad(modalidad: ModalidadAtencion) {
+    return this.repo
+      .createQueryBuilder('especialidad')
+      .innerJoin(
+        'medicos_especialidades',
+        'medicos_especialidades',
+        'medicos_especialidades.especialidad_id = especialidad.id',
+      )
+      .innerJoin(
+        'medicos',
+        'medico',
+        'medico.id = medicos_especialidades.medico_id',
+      )
+      .innerJoin(
+        'bloques_horarios',
+        'bloque',
+        'bloque.medicoId = medico.id AND bloque.estado = :estado AND bloque.modalidad = :modalidad',
+        { estado: 'DISPONIBLE', modalidad },
+      )
+      .orderBy('especialidad.nombre', 'ASC')
+      .distinct(true)
+      .getMany();
   }
 
   async findOne(id: number) {

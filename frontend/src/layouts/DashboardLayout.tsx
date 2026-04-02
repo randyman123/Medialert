@@ -1,12 +1,19 @@
 import type { PropsWithChildren } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { WhatsAppFloatingButton } from '../components/WhatsAppFloatingButton'
 import { useAuth } from '../hooks/useAuth'
 
 export function DashboardLayout({ children }: PropsWithChildren) {
-  const { logout } = useAuth()
+  const { logout, userName } = useAuth()
   const navigate = useNavigate()
 
   const handleLogout = () => {
+    const confirmed = window.confirm('¿Seguro que quieres salir de MediAlert?')
+
+    if (!confirmed) {
+      return
+    }
+
     logout()
     navigate('/login', { replace: true })
   }
@@ -15,7 +22,7 @@ export function DashboardLayout({ children }: PropsWithChildren) {
     <main style={{ minHeight: '100vh', padding: '24px' }}>
       <div
         style={{
-          maxWidth: '960px',
+          maxWidth: '1080px',
           margin: '0 auto',
           backgroundColor: '#ffffff',
           borderRadius: '24px',
@@ -37,7 +44,10 @@ export function DashboardLayout({ children }: PropsWithChildren) {
             <p style={{ margin: 0, color: '#16a34a', fontWeight: 700 }}>
               MediAlert
             </p>
-            <h1 style={{ margin: '8px 0 0', fontSize: '2rem' }}>Dashboard</h1>
+            <h1 style={{ margin: '8px 0 0', fontSize: '2rem' }}>Inicio</h1>
+            <p style={{ margin: '8px 0 0', color: '#4f677a' }}>
+              Hola, {userName} 👋
+            </p>
           </div>
 
           <button
@@ -52,12 +62,14 @@ export function DashboardLayout({ children }: PropsWithChildren) {
               cursor: 'pointer',
             }}
           >
-            Cerrar sesión
+            Salir
           </button>
         </header>
 
         {children}
       </div>
+
+      <WhatsAppFloatingButton />
     </main>
   )
 }

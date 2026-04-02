@@ -51,7 +51,7 @@ export function EspecialidadesPage() {
 
         <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', marginTop: '20px' }}>
           <Link to="/dashboard" style={{ color: '#16a34a' }}>
-            Volver al dashboard
+            Volver al inicio
           </Link>
         </div>
 

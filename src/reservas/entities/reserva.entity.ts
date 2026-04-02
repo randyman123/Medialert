@@ -8,6 +8,7 @@ import {
 import { Paciente } from '../../pacientes/entities/paciente.entity';
 import { Medico } from '../../medicos/entities/medico.entity';
 import { BloqueHorario } from '../../bloques-horarios/entities/bloques-horario.entity';
+import { ModalidadAtencion } from '../../common/enums/modalidad-atencion.enum';
 
 export type EstadoReserva = 'PENDIENTE' | 'CONFIRMADA' | 'CANCELADA';
 
@@ -34,6 +35,24 @@ export class Reserva {
 
   @Column({ nullable: true, length: 255 })
   motivo?: string;
+
+  @Column({
+    type: 'enum',
+    enum: ModalidadAtencion,
+    default: ModalidadAtencion.PRESENCIAL,
+  })
+  modalidad!: ModalidadAtencion;
+
+  @Column({
+    name: 'link_telemedicina',
+    type: 'varchar',
+    length: 500,
+    nullable: true,
+  })
+  linkTelemedicina?: string | null;
+
+  @Column({ type: 'text', nullable: true })
+  observaciones?: string | null;
 
   @CreateDateColumn({ name: 'creado_en' })
   creadoEn!: Date;

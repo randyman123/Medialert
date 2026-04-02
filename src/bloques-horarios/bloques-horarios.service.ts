@@ -10,12 +10,14 @@ import { CreateBloquesHorarioDto } from './dto/create-bloques-horario.dto';
 import { Medico } from '../medicos/entities/medico.entity';
 import { Reserva } from '../reservas/entities/reserva.entity';
 import { ConflictException } from '@nestjs/common';
+import { ModalidadAtencion } from '../common/enums/modalidad-atencion.enum';
 
 type FiltrosBloque = {
   estado?: string;
   medicoId?: number;
   desde?: string; // ISO
   hasta?: string; // ISO
+  modalidad?: ModalidadAtencion;
 };
 
 @Injectable()
@@ -50,6 +52,7 @@ export class BloquesHorariosService {
       inicio,
       fin,
       estado: dto.estado ?? 'DISPONIBLE',
+      modalidad: dto.modalidad ?? ModalidadAtencion.PRESENCIAL,
     });
 
     return this.repo.save(bloque);
@@ -72,6 +75,12 @@ export class BloquesHorariosService {
 
     if (filtros.medicoId) {
       query.andWhere('medico.id = :medicoId', { medicoId: filtros.medicoId });
+    }
+
+    if (filtros.modalidad) {
+      query.andWhere('bloque.modalidad = :modalidad', {
+        modalidad: filtros.modalidad,
+      });
     }
 
     if (filtros.desde) {

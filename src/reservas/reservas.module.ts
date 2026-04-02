@@ -20,5 +20,6 @@ import { Usuario } from '../usuarios/entities/usuario.entity'; // 👈 agrega es
   ],
   controllers: [ReservasController],
   providers: [ReservasService],
+  exports: [ReservasService],
 })
 export class ReservasModule {}

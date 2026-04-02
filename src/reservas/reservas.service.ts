@@ -15,6 +15,8 @@ import { JwtUsuario } from 'src/autenticacion/jwt.guard';
 import { Usuario } from '../usuarios/entities/usuario.entity';
 import { Not } from 'typeorm';
 import { PaginacionDto } from '../common/dto/paginacion.dto';
+import { ModalidadAtencion } from '../common/enums/modalidad-atencion.enum';
+import { CrearReservaTelemedicinaDto } from '../telemedicina/dto/crear-reserva-telemedicina.dto';
 
 @Injectable()
 export class ReservasService {
@@ -33,6 +35,25 @@ export class ReservasService {
   ) {}
 
   async crear(dto: CrearReservaDto, usuario: JwtUsuario) {
+    return this.crearConModalidad(dto, usuario, ModalidadAtencion.PRESENCIAL);
+  }
+
+  async crearTelemedicina(
+    dto: CrearReservaTelemedicinaDto,
+    usuario: JwtUsuario,
+  ) {
+    return this.crearConModalidad(
+      dto,
+      usuario,
+      ModalidadAtencion.TELEMEDICINA,
+    );
+  }
+
+  private async crearConModalidad(
+    dto: CrearReservaDto | CrearReservaTelemedicinaDto,
+    usuario: JwtUsuario,
+    modalidad: ModalidadAtencion,
+  ) {
     const paciente = await this.pacientesRepo.findOne({
       where: { usuario: { id: usuario.id } },
       relations: { usuario: true },
@@ -47,6 +68,12 @@ export class ReservasService {
 
     if (bloque.estado !== 'DISPONIBLE') {
       throw new BadRequestException('El bloque no está disponible');
+    }
+
+    if (bloque.modalidad !== modalidad) {
+      throw new BadRequestException(
+        `El bloque no corresponde a la modalidad ${modalidad}`,
+      );
     }
 
     const medico = await this.medicosRepo.findOne({
@@ -65,6 +92,11 @@ export class ReservasService {
           bloqueHorario: bloque,
           estado: 'PENDIENTE',
           motivo: dto.motivo,
+          modalidad,
+          linkTelemedicina:
+            'linkTelemedicina' in dto ? dto.linkTelemedicina ?? null : null,
+          observaciones:
+            'observaciones' in dto ? dto.observaciones ?? null : null,
         });
 
         return manager.save(Reserva, reserva);

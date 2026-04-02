@@ -18,5 +18,6 @@ import { BloqueHorario } from 'src/bloques-horarios/entities/bloques-horario.ent
   ],
   controllers: [MedicosController],
   providers: [MedicosService],
+  exports: [MedicosService],
 })
 export class MedicosModule {}

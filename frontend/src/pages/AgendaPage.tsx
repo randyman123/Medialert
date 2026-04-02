@@ -48,7 +48,7 @@ export function AgendaPage() {
   const medicoNombre = searchParams.get('medicoNombre') ?? ''
   const especialidadId = searchParams.get('especialidadId') ?? ''
   const especialidadNombre = searchParams.get('especialidadNombre') ?? ''
-  const [fecha, setFecha] = useState(getToday)
+  const [fechaSeleccionada, setFechaSeleccionada] = useState('')
   const [availableDays, setAvailableDays] = useState<AvailableDay[]>([])
   const [bloques, setBloques] = useState<BloqueDisponible[]>([])
   const [isLoading, setIsLoading] = useState(true)
@@ -61,48 +61,6 @@ export function AgendaPage() {
     null,
   )
 
-  const updateAvailableDays = (nextFecha: string, nextBloques: BloqueDisponible[]) => {
-    setAvailableDays((current) => {
-      const withoutCurrentDate = current.filter((day) => day.fecha !== nextFecha)
-
-      if (nextBloques.length === 0) {
-        return withoutCurrentDate
-      }
-
-      return [...withoutCurrentDate, { fecha: nextFecha, bloques: nextBloques }].sort(
-        (left, right) => left.fecha.localeCompare(right.fecha),
-      )
-    })
-  }
-
-  const loadAgendaForDate = async (nextFecha: string) => {
-    if (!medicoId) {
-      return
-    }
-
-    setIsLoading(true)
-    setError('')
-
-    try {
-      const data = await agendaService.obtenerPorMedicoYFecha(Number(medicoId), nextFecha)
-      setFecha(nextFecha)
-      setBloques(data.bloques)
-      setSelectedBloqueId(null)
-      updateAvailableDays(nextFecha, data.bloques)
-    } catch (loadError) {
-      const message =
-        loadError instanceof Error
-          ? loadError.message
-          : 'No se pudo cargar la agenda'
-
-      setError(message)
-      setBloques([])
-      setSelectedBloqueId(null)
-    } finally {
-      setIsLoading(false)
-    }
-  }
-
   useEffect(() => {
     if (!medicoId) {
       setError('Debes seleccionar un médico primero')
@@ -113,53 +71,42 @@ export function AgendaPage() {
     const cargarAgenda = async () => {
       setIsLoading(true)
       setError('')
-      setBloques([])
       setAvailableDays([])
+      setBloques([])
+      setFechaSeleccionada('')
       setSelectedBloqueId(null)
 
       try {
         const upcomingDates = getUpcomingDates(getToday())
         const results = await Promise.allSettled(
-          upcomingDates.map(async (nextFecha) => {
+          upcomingDates.map(async (fecha) => {
             const data = await agendaService.obtenerPorMedicoYFecha(
               Number(medicoId),
-              nextFecha,
+              fecha,
             )
 
             return {
-              fecha: nextFecha,
+              fecha,
               bloques: data.bloques,
             }
           }),
         )
 
-        const successfulDays = results
+        const nextAvailableDays = results
           .filter(
             (
               result,
-            ): result is PromiseFulfilledResult<{
-              fecha: string
-              bloques: BloqueDisponible[]
-            }> => result.status === 'fulfilled',
+            ): result is PromiseFulfilledResult<AvailableDay> =>
+              result.status === 'fulfilled',
           )
           .map((result) => result.value)
-
-        if (successfulDays.length === 0) {
-          throw new Error('No se pudo cargar la agenda')
-        }
-
-        const nextAvailableDays = successfulDays.filter(
-          (day) => day.bloques.length > 0,
-        )
+          .filter((day) => day.bloques.length > 0)
 
         setAvailableDays(nextAvailableDays)
 
         if (nextAvailableDays[0]) {
-          setFecha(nextAvailableDays[0].fecha)
+          setFechaSeleccionada(nextAvailableDays[0].fecha)
           setBloques(nextAvailableDays[0].bloques)
-        } else {
-          setFecha(upcomingDates[0] ?? getToday())
-          setBloques([])
         }
       } catch (loadError) {
         const message =
@@ -168,7 +115,6 @@ export function AgendaPage() {
             : 'No se pudo cargar la agenda'
 
         setError(message)
-        setBloques([])
       } finally {
         setIsLoading(false)
       }
@@ -177,9 +123,34 @@ export function AgendaPage() {
     void cargarAgenda()
   }, [medicoId])
 
+  useEffect(() => {
+    if (!availableDays.length) {
+      setBloques([])
+      return
+    }
+
+    const currentDay =
+      availableDays.find((day) => day.fecha === fechaSeleccionada) ?? availableDays[0]
+
+    if (!currentDay) {
+      return
+    }
+
+    setFechaSeleccionada(currentDay.fecha)
+    setBloques(currentDay.bloques)
+  }, [availableDays, fechaSeleccionada])
+
+  const handleSelectDay = (day: AvailableDay) => {
+    setFechaSeleccionada(day.fecha)
+    setBloques(day.bloques)
+    setSelectedBloqueId(null)
+    setSubmitError('')
+    setConfirmation(null)
+  }
+
   const handleReservar = async () => {
     if (!selectedBloqueId) {
-      setSubmitError('Debes seleccionar un bloque disponible')
+      setSubmitError('Debes seleccionar un horario disponible')
       return
     }
 
@@ -202,18 +173,29 @@ export function AgendaPage() {
 
       if (selectedBloque) {
         setConfirmation({
-          fecha,
+          fecha: fechaSeleccionada,
           inicio: selectedBloque.inicio,
           fin: selectedBloque.fin,
         })
       }
 
-      setMotivo('')
+      const refreshed = await agendaService.obtenerPorMedicoYFecha(
+        Number(medicoId),
+        fechaSeleccionada,
+      )
 
-      const data = await agendaService.obtenerPorMedicoYFecha(Number(medicoId), fecha)
-      setBloques(data.bloques)
+      setAvailableDays((current) =>
+        current
+          .map((day) =>
+            day.fecha === fechaSeleccionada
+              ? { ...day, bloques: refreshed.bloques }
+              : day,
+          )
+          .filter((day) => day.bloques.length > 0),
+      )
+
+      setMotivo('')
       setSelectedBloqueId(null)
-      updateAvailableDays(fecha, data.bloques)
     } catch (reservationError) {
       const message =
         reservationError instanceof Error
@@ -242,11 +224,11 @@ export function AgendaPage() {
             display: 'flex',
             gap: '12px',
             flexWrap: 'wrap',
-            margin: '16px 0 20px',
+            margin: '16px 0 24px',
           }}
         >
           <Link to="/dashboard" style={{ color: '#16a34a' }}>
-            Volver al dashboard
+            Volver al inicio
           </Link>
           <Link to="/especialidades" style={{ color: '#16a34a' }}>
             Volver a especialidades
@@ -262,9 +244,9 @@ export function AgendaPage() {
         {confirmation ? (
           <section
             style={{
-              marginBottom: '20px',
+              marginBottom: '24px',
               padding: '20px',
-              borderRadius: '16px',
+              borderRadius: '18px',
               backgroundColor: '#ecfdf5',
               border: '1px solid #86efac',
             }}
@@ -291,183 +273,176 @@ export function AgendaPage() {
                 Ir a mis reservas
               </Link>
               <Link to="/dashboard" style={{ color: '#166534', fontWeight: 700 }}>
-                Volver al dashboard
+                Volver al inicio
               </Link>
             </div>
           </section>
         ) : null}
 
-        <section
-          style={{
-            padding: '20px',
-            borderRadius: '16px',
-            backgroundColor: '#f8fafc',
-            border: '1px solid #d9e6f2',
-          }}
-        >
-          <h3 style={{ marginTop: 0, color: '#123047' }}>Próximas fechas disponibles</h3>
-
-          {availableDays.length > 0 ? (
-            <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
-              {availableDays.map((day) => (
-                <button
-                  key={day.fecha}
-                  type="button"
-                  onClick={() => {
-                    setFecha(day.fecha)
-                    setBloques(day.bloques)
-                    setSelectedBloqueId(null)
-                    setSubmitError('')
-                    setConfirmation(null)
-                  }}
-                  style={{
-                    border: `1px solid ${fecha === day.fecha ? '#16a34a' : '#d9e6f2'}`,
-                    backgroundColor: fecha === day.fecha ? '#e8f7ee' : '#ffffff',
-                    borderRadius: '999px',
-                    padding: '10px 14px',
-                    cursor: 'pointer',
-                  }}
-                >
-                  {formatDateLabel(day.fecha)} ({day.bloques.length})
-                </button>
-              ))}
-            </div>
-          ) : (
-            <p style={{ marginBottom: '16px', color: '#4f677a' }}>
-              No encontramos bloques en los próximos 7 días. Puedes revisar otra
-              fecha manualmente.
-            </p>
-          )}
-
-          <label
-            style={{
-              display: 'grid',
-              gap: '8px',
-              maxWidth: '240px',
-              marginTop: '20px',
-            }}
-          >
-            Buscar otra fecha
-            <input
-              type="date"
-              value={fecha}
-              onChange={(event) => {
-                void loadAgendaForDate(event.target.value)
-              }}
-              style={{
-                border: '1px solid #cfd9e2',
-                borderRadius: '12px',
-                padding: '12px 14px',
-              }}
-            />
-          </label>
-        </section>
-
-        {isLoading ? <p style={{ marginTop: '20px' }}>Cargando agenda...</p> : null}
-        {error ? <p style={{ color: '#b91c1c', marginTop: '20px' }}>{error}</p> : null}
+        {isLoading ? <p>Cargando disponibilidad...</p> : null}
+        {error ? <p style={{ color: '#b91c1c' }}>{error}</p> : null}
 
         {!isLoading && !error ? (
-          bloques.length > 0 ? (
-            <>
-              <p style={{ color: '#4f677a', marginTop: '24px', marginBottom: '12px' }}>
-                Bloques para <strong>{formatDateLabel(fecha)}</strong>
-              </p>
-              <div style={{ display: 'grid', gap: '12px', marginTop: '24px' }}>
-                {bloques.map((bloque) => (
-                  <button
-                    key={bloque.id}
-                    type="button"
-                    onClick={() => {
-                      setSelectedBloqueId(bloque.id)
-                      setSubmitError('')
-                      setConfirmation(null)
-                    }}
+          availableDays.length > 0 ? (
+            <div
+              style={{
+                display: 'grid',
+                gap: '20px',
+                gridTemplateColumns: 'minmax(240px, 320px) minmax(0, 1fr)',
+                alignItems: 'start',
+              }}
+            >
+              <section
+                style={{
+                  padding: '20px',
+                  borderRadius: '18px',
+                  backgroundColor: '#f8fafc',
+                  border: '1px solid #d9e6f2',
+                }}
+              >
+                <h3 style={{ marginTop: 0, color: '#123047' }}>Días disponibles</h3>
+                <div style={{ display: 'grid', gap: '10px' }}>
+                  {availableDays.map((day) => (
+                    <button
+                      key={day.fecha}
+                      type="button"
+                      onClick={() => handleSelectDay(day)}
+                      style={{
+                        border:
+                          fechaSeleccionada === day.fecha
+                            ? '1px solid #16a34a'
+                            : '1px solid #d9e6f2',
+                        backgroundColor:
+                          fechaSeleccionada === day.fecha ? '#e8f7ee' : '#ffffff',
+                        borderRadius: '14px',
+                        padding: '14px 16px',
+                        textAlign: 'left',
+                        cursor: 'pointer',
+                      }}
+                    >
+                      <strong style={{ display: 'block', color: '#123047' }}>
+                        {formatDateLabel(day.fecha)}
+                      </strong>
+                      <span style={{ color: '#4f677a' }}>
+                        {day.bloques.length} horarios disponibles
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              </section>
+
+              <section
+                style={{
+                  padding: '20px',
+                  borderRadius: '18px',
+                  backgroundColor: '#ffffff',
+                  border: '1px solid #d9e6f2',
+                }}
+              >
+                <h3 style={{ marginTop: 0, color: '#123047' }}>Horarios del día seleccionado</h3>
+                <p style={{ color: '#4f677a', marginTop: 0 }}>
+                  {fechaSeleccionada
+                    ? `Mostrando horarios para ${formatDateLabel(fechaSeleccionada)}.`
+                    : 'Selecciona un día para ver sus horarios.'}
+                </p>
+
+                <div style={{ display: 'grid', gap: '12px', marginTop: '20px' }}>
+                  {bloques.map((bloque) => (
+                    <button
+                      key={bloque.id}
+                      type="button"
+                      onClick={() => {
+                        setSelectedBloqueId(bloque.id)
+                        setSubmitError('')
+                        setConfirmation(null)
+                      }}
+                      style={{
+                        border: '1px solid #d9e6f2',
+                        backgroundColor:
+                          selectedBloqueId === bloque.id ? '#e8f7ee' : '#ffffff',
+                        borderRadius: '14px',
+                        padding: '16px',
+                        textAlign: 'left',
+                        cursor: 'pointer',
+                      }}
+                    >
+                      <strong style={{ display: 'block', color: '#123047' }}>
+                        {formatHour(bloque.inicio)} - {formatHour(bloque.fin)}
+                      </strong>
+                      <span style={{ color: '#4f677a' }}>{bloque.estado}</span>
+                    </button>
+                  ))}
+                </div>
+
+                {bloques.length > 0 ? (
+                  <section
                     style={{
+                      marginTop: '24px',
+                      padding: '20px',
+                      borderRadius: '16px',
+                      backgroundColor: '#f8fafc',
                       border: '1px solid #d9e6f2',
-                      backgroundColor:
-                        selectedBloqueId === bloque.id ? '#e8f7ee' : '#ffffff',
-                      borderRadius: '14px',
-                      padding: '16px',
-                      textAlign: 'left',
-                      cursor: 'pointer',
                     }}
                   >
-                    <strong style={{ display: 'block', color: '#123047' }}>
-                      {formatHour(bloque.inicio)} - {formatHour(bloque.fin)}
-                    </strong>
-                    <span style={{ color: '#4f677a' }}>{bloque.estado}</span>
-                  </button>
-                ))}
-              </div>
-            </>
+                    <h4 style={{ marginTop: 0, color: '#123047' }}>Reservar horario</h4>
+
+                    <label style={{ display: 'grid', gap: '8px' }}>
+                      Motivo
+                      <input
+                        type="text"
+                        value={motivo}
+                        onChange={(event) => setMotivo(event.target.value)}
+                        placeholder="Ej: control general"
+                        style={{
+                          border: '1px solid #cfd9e2',
+                          borderRadius: '12px',
+                          padding: '12px 14px',
+                        }}
+                      />
+                    </label>
+
+                    {submitError ? (
+                      <p style={{ color: '#b91c1c', marginTop: '16px' }}>{submitError}</p>
+                    ) : null}
+
+                    <button
+                      type="button"
+                      onClick={handleReservar}
+                      disabled={isSubmitting}
+                      style={{
+                        marginTop: '16px',
+                        border: 0,
+                        borderRadius: '12px',
+                        padding: '12px 18px',
+                        backgroundColor: '#16a34a',
+                        color: '#ffffff',
+                        cursor: isSubmitting ? 'wait' : 'pointer',
+                      }}
+                    >
+                      {isSubmitting ? 'Reservando...' : 'Reservar'}
+                    </button>
+                  </section>
+                ) : null}
+              </section>
+            </div>
           ) : (
             <section
               style={{
-                marginTop: '24px',
-                padding: '20px',
-                borderRadius: '16px',
+                padding: '24px',
+                borderRadius: '18px',
                 backgroundColor: '#f8fafc',
                 border: '1px solid #d9e6f2',
               }}
             >
+              <h3 style={{ marginTop: 0, color: '#123047' }}>
+                Sin horarios próximos disponibles
+              </h3>
               <p style={{ margin: 0, color: '#4f677a' }}>
-                No hay bloques disponibles para <strong>{formatDateLabel(fecha)}</strong>.
-                {availableDays.length > 0
-                  ? ' Puedes elegir una de las próximas fechas sugeridas.'
-                  : ' Intenta con otra fecha manualmente.'}
+                Este médico no tiene horas visibles en los próximos días. Puedes volver
+                a médicos y revisar otra opción.
               </p>
             </section>
           )
-        ) : null}
-
-        {!isLoading && !error && bloques.length > 0 ? (
-          <section
-            style={{
-              marginTop: '28px',
-              padding: '20px',
-              borderRadius: '16px',
-              backgroundColor: '#f8fafc',
-              border: '1px solid #d9e6f2',
-            }}
-          >
-            <h3 style={{ marginTop: 0, color: '#123047' }}>Reservar bloque</h3>
-
-            <label style={{ display: 'grid', gap: '8px' }}>
-              Motivo
-              <input
-                type="text"
-                value={motivo}
-                onChange={(event) => setMotivo(event.target.value)}
-                placeholder="Ej: control general"
-                style={{
-                  border: '1px solid #cfd9e2',
-                  borderRadius: '12px',
-                  padding: '12px 14px',
-                }}
-              />
-            </label>
-
-            {submitError ? (
-              <p style={{ color: '#b91c1c', marginTop: '16px' }}>{submitError}</p>
-            ) : null}
-
-            <button
-              type="button"
-              onClick={handleReservar}
-              disabled={isSubmitting}
-              style={{
-                marginTop: '16px',
-                border: 0,
-                borderRadius: '12px',
-                padding: '12px 18px',
-                backgroundColor: '#16a34a',
-                color: '#ffffff',
-                cursor: isSubmitting ? 'wait' : 'pointer',
-              }}
-            >
-              {isSubmitting ? 'Reservando...' : 'Reservar'}
-            </button>
-          </section>
         ) : null}
       </section>
     </DashboardLayout>

@@ -11,6 +11,7 @@ import { CentroMedico } from '../centros-medicos/entities/centro-medico.entity';
 import { Especialidad } from '../especialidades/entities/especialidad.entity';
 import { BloqueHorario } from '../bloques-horarios/entities/bloques-horario.entity';
 import { FiltrarMedicosDto } from './dto/filtrar-medicos.dto';
+import { ModalidadAtencion } from '../common/enums/modalidad-atencion.enum';
 
 @Injectable()
 export class MedicosService {
@@ -87,7 +88,11 @@ export class MedicosService {
     };
   }
 
-  async obtenerDisponibilidad(medicoId: number, fecha: string) {
+  async obtenerDisponibilidad(
+    medicoId: number,
+    fecha: string,
+    modalidad: ModalidadAtencion = ModalidadAtencion.PRESENCIAL,
+  ) {
     const medico = await this.findOne(medicoId);
 
     const inicioDia = new Date(`${fecha}T00:00:00`);
@@ -97,6 +102,7 @@ export class MedicosService {
       .createQueryBuilder('bloque')
       .where('bloque.medicoId = :medicoId', { medicoId })
       .andWhere('bloque.estado = :estado', { estado: 'DISPONIBLE' })
+      .andWhere('bloque.modalidad = :modalidad', { modalidad })
       .andWhere('bloque.inicio >= :inicioDia', { inicioDia })
       .andWhere('bloque.fin <= :finDia', { finDia })
       .orderBy('bloque.inicio', 'ASC')
@@ -105,8 +111,26 @@ export class MedicosService {
     return {
       medico: medico.nombreCompleto,
       fecha,
+      modalidad,
       bloques,
     };
+  }
+
+  async listarDisponiblesPorEspecialidadYModalidad(
+    especialidadId: number,
+    modalidad: ModalidadAtencion,
+  ) {
+    return this.repo
+      .createQueryBuilder('medico')
+      .leftJoinAndSelect('medico.centroMedico', 'centroMedico')
+      .leftJoinAndSelect('medico.especialidades', 'especialidad')
+      .leftJoin('bloques_horarios', 'bloque', 'bloque.medicoId = medico.id')
+      .where('especialidad.id = :especialidadId', { especialidadId })
+      .andWhere('bloque.estado = :estado', { estado: 'DISPONIBLE' })
+      .andWhere('bloque.modalidad = :modalidad', { modalidad })
+      .orderBy('medico.id', 'ASC')
+      .distinct(true)
+      .getMany();
   }
 
   async findOne(id: number) {

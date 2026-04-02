@@ -67,7 +67,7 @@ export function MedicosPage() {
           }}
         >
           <Link to="/dashboard" style={{ color: '#16a34a' }}>
-            Volver al dashboard
+            Volver al inicio
           </Link>
           <Link to="/especialidades" style={{ color: '#16a34a' }}>
             Volver a especialidades

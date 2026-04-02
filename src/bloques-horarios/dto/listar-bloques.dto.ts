@@ -1,5 +1,6 @@
 import { Type } from 'class-transformer';
 import { IsIn, IsInt, IsOptional, Max, Min } from 'class-validator';
+import { ModalidadAtencion } from '../../common/enums/modalidad-atencion.enum';
 
 export class ListarBloquesDto {
   @IsOptional()
@@ -11,6 +12,10 @@ export class ListarBloquesDto {
   @IsInt()
   @Min(1)
   medicoId?: number;
+
+  @IsOptional()
+  @IsIn([ModalidadAtencion.PRESENCIAL, ModalidadAtencion.TELEMEDICINA])
+  modalidad?: ModalidadAtencion;
 
   @IsOptional()
   @Type(() => Number)

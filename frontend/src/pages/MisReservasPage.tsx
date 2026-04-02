@@ -73,7 +73,7 @@ export function MisReservasPage() {
 
         <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', margin: '16px 0 24px' }}>
           <Link to="/dashboard" style={{ color: '#16a34a' }}>
-            Volver al dashboard
+            Volver al inicio
           </Link>
         </div>
 
@@ -87,7 +87,7 @@ export function MisReservasPage() {
             }}
           >
             <p style={{ margin: 0, color: '#4f677a' }}>
-              Si necesitas revisar el flujo completo, puedes volver al dashboard y
+              Si necesitas revisar el flujo completo, puedes volver al inicio y
               continuar desde especialidades.
             </p>
           </section>
@@ -156,7 +156,7 @@ export function MisReservasPage() {
               }}
             >
               <p style={{ margin: 0, color: '#4f677a' }}>
-                Aún no tienes reservas activas. Puedes volver al dashboard y crear
+                Aún no tienes reservas activas. Puedes volver al inicio y crear
                 una nueva reserva cuando quieras.
               </p>
             </section>

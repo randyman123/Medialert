@@ -10,5 +10,6 @@ import { Medico } from 'src/medicos/entities/medico.entity';
   imports: [TypeOrmModule.forFeature([Especialidad, Medico, BloqueHorario])],
   controllers: [EspecialidadesController],
   providers: [EspecialidadesService],
+  exports: [EspecialidadesService],
 })
 export class EspecialidadesModule {}

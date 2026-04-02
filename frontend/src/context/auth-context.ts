@@ -6,6 +6,7 @@ export interface AuthContextValue {
   isAuthenticated: boolean
   isLoading: boolean
   role: UserRole
+  userName: string
   login: (payload: LoginPayload) => Promise<void>
   logout: () => void
 }

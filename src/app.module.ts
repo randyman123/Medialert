@@ -14,6 +14,9 @@ import { AuditoriaModule } from './auditoria/auditoria.module';
 import { EventEmitterModule } from '@nestjs/event-emitter';
 import { SeedModule } from './seed/seed.module';
 import { AgendaModule } from './agenda/agenda.module';
+import { MisArchivosModule } from './mis-archivos/mis-archivos.module';
+import { TelemedicinaModule } from './telemedicina/telemedicina.module';
+import { PastilleroModule } from './pastillero/pastillero.module';
 
 @Module({
   imports: [
@@ -46,6 +49,9 @@ import { AgendaModule } from './agenda/agenda.module';
     EventEmitterModule.forRoot(),
     SeedModule,
     AgendaModule,
+    MisArchivosModule,
+    TelemedicinaModule,
+    PastilleroModule,
   ],
 })
 export class AppModule {}
