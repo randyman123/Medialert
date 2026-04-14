@@ -9,6 +9,7 @@ import { Especialidad } from '../especialidades/entities/especialidad.entity';
 import { CentroMedico } from '../centros-medicos/entities/centro-medico.entity';
 import { BloqueHorario } from '../bloques-horarios/entities/bloques-horario.entity';
 import { RolUsuario } from '../usuarios/rol-usuario.enum';
+import { ModalidadAtencion } from '../common/enums/modalidad-atencion.enum';
 
 @Injectable()
 export class SeedService {
@@ -169,19 +170,51 @@ export class SeedService {
   }
 
   private async crearBloquesDemoSiNoExisten(medico: Medico) {
+    const ahora = new Date();
+    const fechaBase = new Date(ahora);
+    fechaBase.setHours(0, 0, 0, 0);
+    fechaBase.setDate(fechaBase.getDate() + 1);
+
+    const diasOffset = [0, 1, 2, 4, 6];
+    const horariosPresenciales = [
+      { hora: 9, minuto: 0 },
+      { hora: 9, minuto: 30 },
+      { hora: 10, minuto: 0 },
+      { hora: 10, minuto: 30 },
+      { hora: 11, minuto: 0 },
+    ];
+    const horariosTelemedicina = [
+      { hora: 15, minuto: 0 },
+      { hora: 15, minuto: 30 },
+      { hora: 16, minuto: 0 },
+    ];
+
+    const construirBloques = (
+      horarios: Array<{ hora: number; minuto: number }>,
+      modalidad: ModalidadAtencion,
+    ) =>
+      diasOffset.flatMap((dias) =>
+        horarios.map(({ hora, minuto }) => {
+          const inicio = new Date(fechaBase);
+          inicio.setDate(fechaBase.getDate() + dias);
+          inicio.setHours(hora, minuto, 0, 0);
+
+          const fin = new Date(inicio);
+          fin.setMinutes(fin.getMinutes() + 30);
+
+          return { inicio, fin, modalidad };
+        }),
+      );
+
     const bloquesBase = [
-      {
-        inicio: new Date('2026-03-14T10:00:00'),
-        fin: new Date('2026-03-14T10:30:00'),
-      },
-      {
-        inicio: new Date('2026-03-14T10:30:00'),
-        fin: new Date('2026-03-14T11:00:00'),
-      },
-      {
-        inicio: new Date('2026-03-14T11:00:00'),
-        fin: new Date('2026-03-14T11:30:00'),
-      },
+      ...construirBloques(
+        horariosPresenciales,
+        ModalidadAtencion.PRESENCIAL,
+      ),
+      ...construirBloques(
+        horariosTelemedicina,
+        ModalidadAtencion.TELEMEDICINA,
+      ),
     ];
 
     for (const bloque of bloquesBase) {
@@ -190,9 +223,19 @@ export class SeedService {
           medico: { id: medico.id },
           inicio: bloque.inicio,
           fin: bloque.fin,
+          modalidad: bloque.modalidad,
         },
         relations: { medico: true },
       });
+
+      if (existe) {
+        if (existe.estado !== 'DISPONIBLE') {
+          existe.estado = 'DISPONIBLE';
+          await this.bloquesRepo.save(existe);
+        }
+
+        continue;
+      }
 
       if (!existe) {
         const nuevo = this.bloquesRepo.create({
@@ -200,6 +243,7 @@ export class SeedService {
           inicio: bloque.inicio,
           fin: bloque.fin,
           estado: 'DISPONIBLE',
+          modalidad: bloque.modalidad,
         });
 
         await this.bloquesRepo.save(nuevo);

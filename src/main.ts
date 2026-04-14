@@ -3,16 +3,38 @@ import { NestFactory } from '@nestjs/core';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { AppModule } from './app.module';
 
+const LOCAL_CORS_ORIGINS = [
+  'http://localhost:5173',
+  'http://localhost:5174',
+  'http://127.0.0.1:5173',
+  'http://127.0.0.1:5174',
+  'http://localhost:3000',
+  'http://127.0.0.1:3000',
+];
+
+function obtenerCorsOrigins() {
+  const envOrigins =
+    process.env.CORS_ORIGINS?.split(',')
+      .map((origin) => origin.trim())
+      .filter(Boolean) ?? [];
+
+  return [...new Set([...LOCAL_CORS_ORIGINS, ...envOrigins])];
+}
+
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
   app.enableCors({
-    origin: [
-      'http://localhost:5173',
-      'http://localhost:5174',
-      'http://127.0.0.1:5173',
-      'http://127.0.0.1:5174',
-    ],
+    origin: (origin, callback) => {
+      const allowedOrigins = obtenerCorsOrigins();
+
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true);
+        return;
+      }
+
+      callback(new Error(`Origen no permitido por CORS: ${origin}`), false);
+    },
     credentials: true,
   });
 
@@ -34,7 +56,8 @@ async function bootstrap() {
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('api', app, document);
 
-  await app.listen(process.env.APP_PORT ? Number(process.env.APP_PORT) : 3000);
+  const port = Number(process.env.PORT ?? process.env.APP_PORT ?? 3000);
+  await app.listen(port, '0.0.0.0');
 }
 
 bootstrap();

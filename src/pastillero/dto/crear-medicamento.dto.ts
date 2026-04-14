@@ -44,6 +44,17 @@ export class CrearMedicamentoDto {
   @IsBoolean()
   alarmaActiva!: boolean;
 
+  @ApiPropertyOptional({ example: 15, default: 0 })
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  recordarMinutosAntes?: number;
+
+  @ApiPropertyOptional({ example: true, default: false })
+  @IsOptional()
+  @IsBoolean()
+  whatsappRecordatorioActivo?: boolean;
+
   @ApiPropertyOptional({ example: 'Tomar despues de las comidas' })
   @IsOptional()
   @IsString()

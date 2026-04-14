@@ -25,6 +25,12 @@ export class MedicamentoResponseDto {
   @ApiProperty({ example: true })
   alarmaActiva!: boolean;
 
+  @ApiProperty({ example: 15 })
+  recordarMinutosAntes!: number;
+
+  @ApiProperty({ example: false })
+  whatsappRecordatorioActivo!: boolean;
+
   @ApiPropertyOptional({
     example: 'Tomar despues de las comidas',
     nullable: true,
@@ -45,6 +51,12 @@ export class MedicamentoResponseDto {
     nullable: true,
   })
   proximaDosisEstimada!: string | null;
+
+  @ApiPropertyOptional({
+    example: '2026-04-02T15:45:00.000Z',
+    nullable: true,
+  })
+  proximoRecordatorioEstimado!: string | null;
 
   @ApiProperty({ example: '2026-04-02T13:10:00.000Z' })
   creadoEn!: Date;

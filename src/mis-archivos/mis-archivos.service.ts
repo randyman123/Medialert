@@ -103,14 +103,14 @@ export class MisArchivosService {
 
   async obtenerDetalle(id: number, usuario: JwtUsuario) {
     const archivo = await this.buscarArchivoPorId(id);
-    this.validarAcceso(archivo, usuario);
+    await this.validarAcceso(archivo, usuario);
 
     return this.mapearArchivo(archivo);
   }
 
   async obtenerDescarga(id: number, usuario: JwtUsuario) {
     const archivo = await this.buscarArchivoPorId(id);
-    this.validarAcceso(archivo, usuario);
+    await this.validarAcceso(archivo, usuario);
 
     const rutaAbsoluta = join(
       process.cwd(),
@@ -214,7 +214,7 @@ export class MisArchivosService {
     return archivo;
   }
 
-  private validarAcceso(archivo: MisArchivo, usuario: JwtUsuario) {
+  private async validarAcceso(archivo: MisArchivo, usuario: JwtUsuario) {
     if (
       usuario.rol === RolUsuario.ADMIN ||
       usuario.rol === RolUsuario.RECEPCION
@@ -226,7 +226,9 @@ export class MisArchivosService {
       throw new ForbiddenException('No autorizado para acceder a este archivo');
     }
 
-    if (archivo.paciente.usuario.id !== usuario.id) {
+    const pacienteAutenticado = await this.buscarPacientePorUsuario(usuario.id);
+
+    if (archivo.paciente.id !== pacienteAutenticado.id) {
       throw new ForbiddenException('No autorizado para acceder a este archivo');
     }
   }

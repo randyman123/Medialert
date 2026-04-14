@@ -10,7 +10,8 @@ export type AccionAuditoria =
   | 'RESERVA_CREADA'
   | 'RESERVA_CANCELADA'
   | 'ARCHIVO_SUBIDO'
-  | 'ARCHIVO_ELIMINADO';
+  | 'ARCHIVO_ELIMINADO'
+  | 'PASTILLERO_RECORDATORIO_GENERADO';
 
 @Entity({ name: 'registro_auditoria' })
 export class RegistroAuditoria {
@@ -24,6 +25,7 @@ export class RegistroAuditoria {
       'RESERVA_CANCELADA',
       'ARCHIVO_SUBIDO',
       'ARCHIVO_ELIMINADO',
+      'PASTILLERO_RECORDATORIO_GENERADO',
     ],
   })
   accion!: AccionAuditoria;

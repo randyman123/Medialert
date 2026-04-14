@@ -4,8 +4,11 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { InjectRepository } from '@nestjs/typeorm';
 import * as bcrypt from 'bcrypt';
 import * as jwt from 'jsonwebtoken';
+import { Repository } from 'typeorm';
+import { Paciente } from '../pacientes/entities/paciente.entity';
 import { UsuariosService } from '../usuarios/usuarios.service';
 import { RegistrarDto } from './dto/registrar.dto';
 import { LoginDto } from './dto/login.dto';
@@ -16,6 +19,8 @@ export class AutenticacionService {
   constructor(
     private readonly usuarios: UsuariosService,
     private readonly cfg: ConfigService,
+    @InjectRepository(Paciente)
+    private readonly pacientesRepo: Repository<Paciente>,
   ) {}
 
   private firmarToken(usuario: Usuario) {
@@ -36,8 +41,14 @@ export class AutenticacionService {
 
     const hash = await bcrypt.hash(dto.contrasena, 10);
 
-    // Creamos usuario PACIENTE
     const usuario = await this.usuarios.crearPaciente(dto.correo, hash);
+    const paciente = this.pacientesRepo.create({
+      nombreCompleto: dto.nombreCompleto,
+      correo: dto.correo,
+      usuario,
+    });
+
+    await this.pacientesRepo.save(paciente);
 
     return { accessToken: this.firmarToken(usuario) };
   }

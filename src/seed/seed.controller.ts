@@ -1,4 +1,5 @@
-import { Controller, Post, UseGuards } from '@nestjs/common';
+import { Controller, ForbiddenException, Post, UseGuards } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { SeedService } from './seed.service';
 import { JwtGuard } from '../autenticacion/jwt.guard';
@@ -9,7 +10,10 @@ import { RolUsuario } from '../usuarios/rol-usuario.enum';
 @ApiTags('seed')
 @Controller('seed')
 export class SeedController {
-  constructor(private readonly seedService: SeedService) {}
+  constructor(
+    private readonly seedService: SeedService,
+    private readonly configService: ConfigService,
+  ) {}
 
   @Post('base')
   @ApiOperation({ summary: 'Ejecutar seed base de desarrollo' })
@@ -17,6 +21,22 @@ export class SeedController {
   @UseGuards(JwtGuard, RolesGuard)
   @Roles(RolUsuario.ADMIN)
   ejecutarSeedBase() {
+    return this.seedService.ejecutarSeedBase();
+  }
+
+  @Post('bootstrap')
+  @ApiOperation({
+    summary:
+      'Inicializar seed base sin autenticacion solo cuando SEED_BOOTSTRAP_ENABLED=true',
+  })
+  ejecutarSeedBootstrap() {
+    const enabled =
+      this.configService.get<string>('SEED_BOOTSTRAP_ENABLED') === 'true';
+
+    if (!enabled) {
+      throw new ForbiddenException('Seed bootstrap deshabilitado');
+    }
+
     return this.seedService.ejecutarSeedBase();
   }
 }

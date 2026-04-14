@@ -1,5 +1,12 @@
 import { Type } from 'class-transformer';
-import { IsInt, IsOptional, IsString, IsUrl, MinLength } from 'class-validator';
+import {
+  IsBoolean,
+  IsInt,
+  IsOptional,
+  IsString,
+  IsUrl,
+  MinLength,
+} from 'class-validator';
 
 export class CrearReservaTelemedicinaDto {
   @Type(() => Number)
@@ -13,6 +20,10 @@ export class CrearReservaTelemedicinaDto {
   @IsOptional()
   @IsUrl()
   linkTelemedicina?: string;
+
+  @IsOptional()
+  @IsBoolean()
+  generarSalaAutomaticamente?: boolean;
 
   @IsOptional()
   @IsString()

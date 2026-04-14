@@ -1,6 +1,7 @@
 import { CategoriaArchivo } from './categoria-archivo.enum';
 
-export const DIRECTORIO_BASE_MIS_ARCHIVOS = 'storage/mis-archivos';
+export const DIRECTORIO_BASE_MIS_ARCHIVOS =
+  process.env.STORAGE_BASE_DIR?.trim() || 'storage/mis-archivos';
 export const MAX_TAMANO_ARCHIVO_BYTES = 10 * 1024 * 1024;
 export const TIPOS_MIME_PERMITIDOS = new Set<string>([
   'application/pdf',

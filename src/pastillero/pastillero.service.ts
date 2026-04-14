@@ -11,6 +11,12 @@ import { RolUsuario } from '../usuarios/rol-usuario.enum';
 import { ActualizarMedicamentoDto } from './dto/actualizar-medicamento.dto';
 import { CrearMedicamentoDto } from './dto/crear-medicamento.dto';
 import { Pastillero } from './entities/pastillero.entity';
+import {
+  calcularFechaFinTratamiento,
+  calcularProximaDosis,
+  calcularProximoRecordatorio,
+  formatearFechaLocal,
+} from './pastillero-fechas';
 
 @Injectable()
 export class PastilleroService {
@@ -29,6 +35,8 @@ export class PastilleroService {
       dosis: dto.dosis ?? null,
       observaciones: dto.observaciones ?? null,
       activo: true,
+      recordarMinutosAntes: dto.recordarMinutosAntes ?? 0,
+      whatsappRecordatorioActivo: dto.whatsappRecordatorioActivo ?? false,
       paciente,
     });
 
@@ -64,6 +72,14 @@ export class PastilleroService {
       ...dto,
       dosis:
         dto.dosis !== undefined ? (dto.dosis ?? null) : medicamento.dosis,
+      recordarMinutosAntes:
+        dto.recordarMinutosAntes !== undefined
+          ? dto.recordarMinutosAntes
+          : medicamento.recordarMinutosAntes,
+      whatsappRecordatorioActivo:
+        dto.whatsappRecordatorioActivo !== undefined
+          ? dto.whatsappRecordatorioActivo
+          : medicamento.whatsappRecordatorioActivo,
       observaciones:
         dto.observaciones !== undefined
           ? (dto.observaciones ?? null)
@@ -132,6 +148,8 @@ export class PastilleroService {
       frecuenciaHoras: medicamento.frecuenciaHoras,
       duracionDias: medicamento.duracionDias,
       alarmaActiva: medicamento.alarmaActiva,
+      recordarMinutosAntes: medicamento.recordarMinutosAntes,
+      whatsappRecordatorioActivo: medicamento.whatsappRecordatorioActivo,
       observaciones: medicamento.observaciones,
       activo: medicamento.activo,
       pacienteId: medicamento.paciente.id,
@@ -139,52 +157,19 @@ export class PastilleroService {
       actualizadoEn: medicamento.actualizadoEn,
       fechaFinEstimada: this.calcularFechaFin(medicamento),
       proximaDosisEstimada: this.calcularProximaDosis(medicamento),
+      proximoRecordatorioEstimado: this.calcularProximoRecordatorio(medicamento),
     };
   }
 
   private calcularFechaFin(medicamento: Pastillero) {
-    const fechaBase = new Date(`${medicamento.fechaInicio}T00:00:00`);
-    fechaBase.setDate(fechaBase.getDate() + medicamento.duracionDias - 1);
-
-    return this.formatearFechaLocal(fechaBase);
+    return formatearFechaLocal(calcularFechaFinTratamiento(medicamento));
   }
 
   private calcularProximaDosis(medicamento: Pastillero) {
-    if (!medicamento.activo || !medicamento.alarmaActiva) {
-      return null;
-    }
-
-    const [hora, minuto] = medicamento.horaInicio.split(':').map(Number);
-    const inicio = new Date(`${medicamento.fechaInicio}T00:00:00`);
-    inicio.setHours(hora, minuto, 0, 0);
-
-    const ahora = new Date();
-    const finTratamiento = new Date(
-      `${this.calcularFechaFin(medicamento)}T23:59:59.999`,
-    );
-    finTratamiento.setHours(23, 59, 59, 999);
-
-    if (ahora <= inicio) {
-      return inicio.toISOString();
-    }
-
-    const frecuenciaMs = medicamento.frecuenciaHoras * 60 * 60 * 1000;
-    const transcurrido = ahora.getTime() - inicio.getTime();
-    const dosisTranscurridas = Math.floor(transcurrido / frecuenciaMs) + 1;
-    const proxima = new Date(inicio.getTime() + dosisTranscurridas * frecuenciaMs);
-
-    if (proxima > finTratamiento) {
-      return null;
-    }
-
-    return proxima.toISOString();
+    return calcularProximaDosis(medicamento)?.toISOString() ?? null;
   }
 
-  private formatearFechaLocal(fecha: Date) {
-    const year = fecha.getFullYear();
-    const month = String(fecha.getMonth() + 1).padStart(2, '0');
-    const day = String(fecha.getDate()).padStart(2, '0');
-
-    return `${year}-${month}-${day}`;
+  private calcularProximoRecordatorio(medicamento: Pastillero) {
+    return calcularProximoRecordatorio(medicamento)?.toISOString() ?? null;
   }
 }

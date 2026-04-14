@@ -20,6 +20,18 @@ type EventoArchivo = {
   nombreOriginal?: string;
 };
 
+type EventoRecordatorioPastillero = {
+  medicamentoId: number;
+  pacienteId: number;
+  usuarioId?: number;
+  fechaDosisProgramada: string;
+  fechaRecordatorio: string;
+  tipo: 'EXACTO' | 'ANTICIPADO';
+  minutosAntes: number;
+  canal: string;
+  proveedor: string;
+};
+
 @Injectable()
 export class AuditoriaListener {
   constructor(private readonly auditoria: AuditoriaService) {}
@@ -75,6 +87,26 @@ export class AuditoriaListener {
         pacienteId: payload.pacienteId,
         categoria: payload.categoria ?? null,
         nombreOriginal: payload.nombreOriginal ?? null,
+      },
+    });
+  }
+
+  @OnEvent('pastillero.recordatorio-generado')
+  async onRecordatorioGenerado(payload: EventoRecordatorioPastillero) {
+    await this.auditoria.registrar({
+      accion: 'PASTILLERO_RECORDATORIO_GENERADO',
+      entidad: 'Pastillero',
+      entidadId: payload.medicamentoId,
+      usuarioId: payload.usuarioId ?? null,
+      rol: RolUsuario.PACIENTE,
+      detalle: {
+        pacienteId: payload.pacienteId,
+        fechaDosisProgramada: payload.fechaDosisProgramada,
+        fechaRecordatorio: payload.fechaRecordatorio,
+        tipo: payload.tipo,
+        minutosAntes: payload.minutosAntes,
+        canal: payload.canal,
+        proveedor: payload.proveedor,
       },
     });
   }

@@ -37,6 +37,12 @@ export class Pastillero {
   @Column({ name: 'alarma_activa', default: true })
   alarmaActiva!: boolean;
 
+  @Column({ name: 'recordar_minutos_antes', type: 'int', default: 0 })
+  recordarMinutosAntes!: number;
+
+  @Column({ name: 'whatsapp_recordatorio_activo', default: false })
+  whatsappRecordatorioActivo!: boolean;
+
   @Column({ nullable: true, type: 'text' })
   observaciones?: string | null;
 

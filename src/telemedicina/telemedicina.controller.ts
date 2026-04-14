@@ -20,6 +20,7 @@ import { Roles } from '../autenticacion/roles.decorator';
 import { RolesGuard } from '../autenticacion/roles.guard';
 import { RolUsuario } from '../usuarios/rol-usuario.enum';
 import { CrearReservaTelemedicinaDto } from './dto/crear-reserva-telemedicina.dto';
+import { GenerarSalaTelemedicinaDto } from './dto/generar-sala-telemedicina.dto';
 import { TelemedicinaService } from './telemedicina.service';
 
 @ApiTags('telemedicina')
@@ -54,9 +55,21 @@ export class TelemedicinaController {
   @Post('reservar')
   @ApiBearerAuth()
   @UseGuards(JwtGuard, RolesGuard)
-  @Roles(RolUsuario.PACIENTE, RolUsuario.RECEPCION)
+  @Roles(RolUsuario.PACIENTE)
   @ApiOperation({ summary: 'Reservar una hora de telemedicina' })
   reservar(@Body() dto: CrearReservaTelemedicinaDto, @Req() req: any) {
     return this.telemedicinaService.reservar(dto, req.usuario);
+  }
+
+  @Post('salas/preview')
+  @ApiBearerAuth()
+  @UseGuards(JwtGuard, RolesGuard)
+  @Roles(RolUsuario.PACIENTE, RolUsuario.RECEPCION, RolUsuario.ADMIN)
+  @ApiOperation({ summary: 'Generar una sala de videollamada de prueba para telemedicina' })
+  generarSalaPreview(
+    @Body() dto: GenerarSalaTelemedicinaDto,
+    @Req() req: any,
+  ) {
+    return this.telemedicinaService.generarSalaPreview(dto, req.usuario);
   }
 }

@@ -29,7 +29,7 @@ export class ReservasController {
   constructor(private readonly servicio: ReservasService) {}
 
   @Post()
-  @Roles(RolUsuario.PACIENTE, RolUsuario.RECEPCION)
+  @Roles(RolUsuario.PACIENTE)
   crear(@Body() dto: CrearReservaDto, @Req() req: any) {
     return this.servicio.crear(dto, req.usuario);
   }
@@ -41,7 +41,7 @@ export class ReservasController {
     return this.servicio.listar(paginacionDto);
   }
   @Patch(':id/cancelar')
-  @Roles(RolUsuario.PACIENTE, RolUsuario.RECEPCION)
+  @Roles(RolUsuario.PACIENTE)
   cancelar(@Param('id', ParseIntPipe) id: number, @Req() req: any) {
     // eslint-disable-next-line @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-member-access
     return this.servicio.cancelar(id, req.usuario);
