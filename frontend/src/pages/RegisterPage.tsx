@@ -1,9 +1,9 @@
 import { Navigate } from 'react-router-dom'
-import { LoginForm } from '../components/LoginForm'
+import { RegisterForm } from '../components/RegisterForm'
 import { useAuth } from '../hooks/useAuth'
 import { AuthLayout } from '../layouts/AuthLayout'
 
-export function LoginPage() {
+export function RegisterPage() {
   const { isAuthenticated, isLoading } = useAuth()
 
   if (isLoading) {
@@ -19,14 +19,14 @@ export function LoginPage() {
       <div className="stack-md" style={{ gap: '6px' }}>
         <p style={{ margin: 0, color: '#0e7490', fontWeight: 700 }}>MediAlert</p>
         <h1 className="page-title" style={{ fontSize: '1.9rem' }}>
-          Iniciar sesión
+          Crear cuenta
         </h1>
         <p className="page-subtitle">
-          Accede al frontend conectado con tu backend NestJS o crea una cuenta nueva.
+          Registra un nuevo paciente para probar el frontend conectado con tu backend.
         </p>
       </div>
 
-      <LoginForm />
+      <RegisterForm />
     </AuthLayout>
   )
 }

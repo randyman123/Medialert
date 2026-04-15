@@ -1,7 +1,6 @@
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
 import { DashboardLayout } from '../layouts/DashboardLayout'
-import { canViewMisReservas } from '../utils/auth'
 
 interface HomeCard {
   title: string
@@ -12,60 +11,97 @@ interface HomeCard {
   helper?: string
 }
 
+interface DashboardSection {
+  title: string
+  description: string
+  cards: HomeCard[]
+}
+
 export function DashboardPage() {
   const { logout, role } = useAuth()
   const navigate = useNavigate()
-  const showMisReservas = canViewMisReservas(role)
+  const isPaciente = role === 'PACIENTE'
+  const isRecepcion = role === 'RECEPCION'
+  const isAdmin = role === 'ADMIN'
 
-  const mainCards: HomeCard[] = [
-    {
-      title: 'Reservar hora',
-      description: 'Explora especialidades, médicos y próximos horarios disponibles.',
-      tone: 'primary',
-      to: '/especialidades',
-    },
-    {
-      title: 'Mis reservas',
-      description: showMisReservas
-        ? 'Consulta y cancela tus reservas activas.'
-        : 'Disponible solo para pacientes.',
-      tone: 'secondary',
-      to: showMisReservas ? '/mis-reservas' : undefined,
-      disabled: !showMisReservas,
-      helper: showMisReservas ? undefined : 'Restringido por rol',
-    },
-    {
-      title: 'Telemedicina',
-      description: 'Acceso rápido a futuras videoconsultas y seguimiento remoto.',
-      tone: 'secondary',
-      disabled: true,
-      helper: 'Próximamente',
-    },
-    {
-      title: 'Mis archivos',
-      description: 'Resultados, indicaciones y documentos clínicos en un solo lugar.',
-      tone: 'secondary',
-      disabled: true,
-      helper: showMisReservas ? 'Próximamente' : 'Restringido por rol',
-    },
-  ]
-
-  const secondaryCards: HomeCard[] = [
-    {
-      title: 'Mi perfil',
-      description: 'Actualiza tus datos personales y de contacto.',
-      tone: 'secondary',
-      disabled: true,
-      helper: 'Próximamente',
-    },
-    {
-      title: 'Mi historial',
-      description: 'Revisa atenciones, reservas pasadas y próximos seguimientos.',
-      tone: 'secondary',
-      disabled: true,
-      helper: showMisReservas ? 'Próximamente' : 'Disponible solo para pacientes',
-    },
-  ]
+  const sections: DashboardSection[] = isPaciente
+    ? [
+        {
+          title: 'Accesos principales',
+          description: 'Tus módulos personales y de atención rápida.',
+          cards: [
+            {
+              title: 'Reservar hora',
+              description:
+                'Explora especialidades, médicos y próximos horarios disponibles.',
+              tone: 'primary',
+              to: '/especialidades',
+            },
+            {
+              title: 'Telemedicina',
+              description:
+                'Reserva atenciones remotas, revisa horarios y entra a videollamadas.',
+              tone: 'secondary',
+              to: '/telemedicina',
+            },
+            {
+              title: 'Mis reservas',
+              description: 'Consulta y cancela tus reservas activas.',
+              tone: 'secondary',
+              to: '/mis-reservas',
+            },
+            {
+              title: 'Mis archivos',
+              description: 'Resultados, recetas y documentos clínicos en un solo lugar.',
+              tone: 'secondary',
+              to: '/mis-archivos',
+            },
+            {
+              title: 'Pastillero',
+              description: 'Organiza tus medicamentos y revisa próximas dosis.',
+              tone: 'secondary',
+              to: '/pastillero',
+            },
+          ],
+        },
+      ]
+    : [
+        {
+          title: isRecepcion ? 'Accesos operativos' : 'Accesos administrativos',
+          description:
+            isRecepcion
+              ? 'Herramientas esenciales para recepción y gestión operativa.'
+              : 'Herramientas esenciales para administración y supervisión.',
+          cards: [
+            {
+              title: isRecepcion ? 'Gestión de agenda' : 'Gestión médica',
+              description:
+                isRecepcion
+                  ? 'Revisa especialidades, médicos y disponibilidad para coordinar atención.'
+                  : 'Navega por especialidades y médicos desde una vista institucional.',
+              tone: 'primary',
+              to: '/especialidades',
+            },
+            {
+              title: 'Archivos clínicos',
+              description: isRecepcion
+                ? 'Consulta archivos clínicos por paciente desde una vista operativa.'
+                : 'Espacio institucional para documentación clínica y soporte administrativo.',
+              tone: 'secondary',
+              to: '/archivos-clinicos',
+            },
+            {
+              title: 'Reportes',
+              description: isRecepcion
+                ? 'Los reportes institucionales se incorporarán aquí cuando exista una vista dedicada.'
+                : 'Espacio preparado para métricas, auditoría y visibilidad ejecutiva.',
+              tone: 'secondary',
+              disabled: true,
+              helper: 'Próximamente',
+            },
+          ],
+        },
+      ]
 
   const handleLogout = () => {
     const confirmed = window.confirm('¿Seguro que quieres salir de MediAlert?')
@@ -79,155 +115,88 @@ export function DashboardPage() {
   }
 
   return (
-    <DashboardLayout>
-      <section
-        style={{
-          padding: '28px',
-          borderRadius: '24px',
-          background:
-            'linear-gradient(135deg, rgba(18, 48, 71, 0.98) 0%, rgba(23, 98, 163, 0.92) 100%)',
-          color: '#ffffff',
-        }}
-      >
-        <p style={{ margin: 0, color: '#86efac', fontWeight: 700 }}>
-          Inicio MediAlert
-        </p>
-        <h2 style={{ margin: '8px 0 10px', fontSize: '2rem' }}>
-          Tu centro de atención médica en un solo lugar
-        </h2>
-        <p style={{ margin: 0, maxWidth: '680px', color: 'rgba(255, 255, 255, 0.84)' }}>
-          Gestiona reservas, consulta tus módulos disponibles y accede rápido a las
-          acciones principales según tu perfil.
-        </p>
-      </section>
+    <DashboardLayout showHeaderLogout={false}>
+      <section className="page">
+        <section className="hero-banner">
+          <p className="hero-eyebrow">Inicio MediAlert</p>
+          <h2 className="hero-title">Tu centro de atención médica en un solo lugar</h2>
+          <p className="hero-text">
+            Gestiona reservas, consulta tus módulos disponibles y accede rápido a las
+            acciones principales según tu perfil.
+          </p>
+          <p className="hero-text" style={{ marginTop: '10px' }}>
+            {isPaciente
+              ? 'Tienes acceso a tus módulos personales, reservas y seguimiento de atención.'
+              : isRecepcion
+                ? 'Tu vista prioriza gestión de agenda y acceso institucional sin exponer módulos personales del paciente.'
+                : isAdmin
+                  ? 'Tu vista muestra accesos administrativos esenciales sin exponer módulos personales del paciente.'
+                  : 'Explora los accesos disponibles según tu perfil actual.'}
+          </p>
+        </section>
 
-      <section style={{ marginTop: '28px' }}>
-        <h3 style={{ margin: '0 0 14px', color: '#123047' }}>Accesos principales</h3>
-        <div
-          style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
-            gap: '16px',
-          }}
-        >
-          {mainCards.map((card) => {
-            const cardStyle = {
-              display: 'grid',
-              gap: '12px',
-              minHeight: '172px',
-              borderRadius: '20px',
-              padding: '20px',
-              textDecoration: 'none',
-              border:
-                card.tone === 'primary'
-                  ? '1px solid #bbf7d0'
-                  : '1px solid #d9e6f2',
-              background:
-                card.tone === 'primary'
-                  ? 'linear-gradient(180deg, #f0fdf4 0%, #dcfce7 100%)'
-                  : '#ffffff',
-              color: '#123047',
-              opacity: card.disabled ? 0.72 : 1,
-              cursor: card.disabled ? 'not-allowed' : 'pointer',
-            } satisfies React.CSSProperties
+        {sections.map((section) => (
+          <section key={section.title} className="stack-md">
+            <div className="stack-md" style={{ gap: '4px' }}>
+              <h3 className="section-heading">{section.title}</h3>
+              <p className="section-caption">{section.description}</p>
+            </div>
+            <div className="cards-grid">
+              {section.cards.map((card) => {
+                const className = `action-card ${card.tone === 'primary' ? 'action-card-primary' : ''} ${card.disabled ? 'action-card-disabled' : ''}`
 
-            const content = (
-              <>
-                <div>
-                  <strong style={{ display: 'block', fontSize: '1.05rem' }}>
-                    {card.title}
-                  </strong>
-                  <p style={{ margin: '8px 0 0', color: '#4f677a' }}>
-                    {card.description}
-                  </p>
-                </div>
-                <span style={{ color: '#16a34a', fontWeight: 700 }}>
-                  {card.helper ?? 'Abrir'}
-                </span>
-              </>
-            )
+                const content = (
+                  <>
+                    <div>
+                      <strong style={{ display: 'block', fontSize: '1.05rem' }}>{card.title}</strong>
+                      <p className="data-row-meta" style={{ marginTop: '8px' }}>
+                        {card.description}
+                      </p>
+                    </div>
+                    <span className="action-card-label">{card.helper ?? 'Abrir'}</span>
+                  </>
+                )
 
-            if (card.to && !card.disabled) {
-              return (
-                <Link key={card.title} to={card.to} style={cardStyle}>
-                  {content}
-                </Link>
-              )
-            }
+                if (card.to && !card.disabled) {
+                  return (
+                    <Link key={card.title} to={card.to} className={className}>
+                      {content}
+                    </Link>
+                  )
+                }
 
-            return (
-              <button key={card.title} type="button" disabled style={cardStyle}>
-                {content}
-              </button>
-            )
-          })}
-        </div>
-      </section>
+                return (
+                  <button key={card.title} type="button" disabled className={className}>
+                    {content}
+                  </button>
+                )
+              })}
+            </div>
+          </section>
+        ))}
 
-      <section style={{ marginTop: '28px' }}>
-        <h3 style={{ margin: '0 0 14px', color: '#123047' }}>Mi espacio</h3>
-        <div
-          style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
-            gap: '16px',
-          }}
-        >
-          {secondaryCards.map((card) => (
-            <button
-              key={card.title}
-              type="button"
-              disabled
-              style={{
-                display: 'grid',
-                gap: '12px',
-                minHeight: '148px',
-                borderRadius: '20px',
-                padding: '20px',
-                border: '1px solid #d9e6f2',
-                backgroundColor: '#ffffff',
-                textAlign: 'left',
-                color: '#123047',
-                opacity: 0.78,
-              }}
-            >
-              <div>
-                <strong style={{ display: 'block', fontSize: '1rem' }}>{card.title}</strong>
-                <p style={{ margin: '8px 0 0', color: '#4f677a' }}>
-                  {card.description}
-                </p>
-              </div>
-              <span style={{ color: '#16a34a', fontWeight: 700 }}>
-                {card.helper ?? 'Próximamente'}
-              </span>
-            </button>
-          ))}
-
+        <section>
           <button
             type="button"
             onClick={handleLogout}
+            className="action-card"
             style={{
-              display: 'grid',
-              gap: '12px',
-              minHeight: '148px',
-              borderRadius: '20px',
-              padding: '20px',
-              border: '1px solid #fecaca',
-              backgroundColor: '#fff7f7',
-              textAlign: 'left',
-              color: '#991b1b',
-              cursor: 'pointer',
+              width: '100%',
+              borderColor: '#f3c5c2',
+              background: '#fff7f7',
+              color: '#8f1f18',
+              minHeight: 'unset',
             }}
           >
             <div>
               <strong style={{ display: 'block', fontSize: '1rem' }}>Salir</strong>
-              <p style={{ margin: '8px 0 0', color: '#b91c1c' }}>
+              <p style={{ margin: '8px 0 0', color: '#ab2f27' }}>
                 Cierra tu sesión de forma segura cuando termines de usar la app.
               </p>
             </div>
             <span style={{ fontWeight: 700 }}>Cerrar sesión</span>
           </button>
-        </div>
+        </section>
       </section>
     </DashboardLayout>
   )

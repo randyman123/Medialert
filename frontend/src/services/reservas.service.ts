@@ -2,6 +2,7 @@ import { AxiosError } from 'axios'
 import { api } from './api'
 
 export type EstadoReserva = 'PENDIENTE' | 'CONFIRMADA' | 'CANCELADA'
+export type ModalidadReserva = 'PRESENCIAL' | 'TELEMEDICINA'
 
 interface MedicoReserva {
   id: number
@@ -18,7 +19,10 @@ interface BloqueHorarioReserva {
 export interface Reserva {
   id: number
   estado: EstadoReserva
+  modalidad?: ModalidadReserva
   motivo?: string
+  linkTelemedicina?: string | null
+  observaciones?: string | null
   creadoEn: string
   medico: MedicoReserva
   bloqueHorario: BloqueHorarioReserva

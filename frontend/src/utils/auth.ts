@@ -95,3 +95,11 @@ export function getUserNameFromToken(token: string | null) {
 export function canViewMisReservas(role: UserRole) {
   return role === 'PACIENTE'
 }
+
+export function canManagePatientContent(role: UserRole) {
+  return role === 'PACIENTE'
+}
+
+export function canAccessTelemedicina(role: UserRole) {
+  return role === 'PACIENTE' || role === 'RECEPCION'
+}

@@ -1,10 +1,14 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
+import { useAuth } from '../hooks/useAuth'
 import { DashboardLayout } from '../layouts/DashboardLayout'
 import { medicosService, type Medico } from '../services/medicos.service'
 
 export function MedicosPage() {
   const navigate = useNavigate()
+  const { role } = useAuth()
+  const isRecepcion = role === 'RECEPCION'
+  const isAdmin = role === 'ADMIN'
   const [searchParams] = useSearchParams()
   const especialidadId = searchParams.get('especialidadId')
   const especialidadNombre = searchParams.get('especialidadNombre') ?? ''
@@ -51,48 +55,69 @@ export function MedicosPage() {
 
   return (
     <DashboardLayout>
-      <section>
-        <h2 style={{ marginTop: 0, color: '#123047' }}>Médicos</h2>
-        <p style={{ color: '#4f677a' }}>
-          Especialidad seleccionada:{' '}
-          <strong>{especialidadNombre || 'Sin especialidad'}</strong>
-        </p>
+      <section className="page">
+        <header className="page-header">
+          <h2 className="page-title">
+            {isRecepcion
+              ? 'Médicos por especialidad'
+              : isAdmin
+                ? 'Profesionales por especialidad'
+                : 'Médicos'}
+          </h2>
+          <p className="page-subtitle">
+            {isRecepcion
+              ? 'Revisa el equipo médico asociado a '
+              : isAdmin
+                ? 'Visualización institucional de médicos registrados en '
+                : 'Especialidad seleccionada: '}
+            <strong>{especialidadNombre || 'Sin especialidad'}</strong>
+          </p>
+        </header>
 
-        <div
-          style={{
-            display: 'flex',
-            gap: '12px',
-            flexWrap: 'wrap',
-            margin: '16px 0 24px',
-          }}
-        >
-          <Link to="/dashboard" style={{ color: '#16a34a' }}>
+        {isRecepcion ? (
+          <section className="panel" style={{ marginBottom: '20px' }}>
+            <strong style={{ display: 'block', color: '#123047' }}>
+              Paso 2 de la gestión operativa
+            </strong>
+            <p className="page-subtitle" style={{ marginBottom: 0 }}>
+              Selecciona un médico para ver sus bloques horarios disponibles y apoyar
+              la coordinación desde recepción.
+            </p>
+          </section>
+        ) : isAdmin ? (
+          <section className="panel" style={{ marginBottom: '20px' }}>
+            <strong style={{ display: 'block', color: '#123047' }}>
+              Contexto institucional
+            </strong>
+            <p className="page-subtitle" style={{ marginBottom: 0 }}>
+              Esta vista permite revisar los profesionales registrados por
+              especialidad y navegar la estructura médica del sistema. Las funciones
+              de edición se integrarán próximamente.
+            </p>
+          </section>
+        ) : null}
+
+        <div className="page-nav">
+          <Link to="/dashboard" className="page-nav-link">
             Volver al inicio
           </Link>
-          <Link to="/especialidades" style={{ color: '#16a34a' }}>
+          <Link to="/especialidades" className="page-nav-link">
             Volver a especialidades
           </Link>
         </div>
 
-        {isLoading ? <p>Cargando médicos...</p> : null}
-        {error ? <p style={{ color: '#b91c1c' }}>{error}</p> : null}
+        {isLoading ? <p className="alert alert-info">Cargando médicos...</p> : null}
+        {error ? <p className="alert alert-error">{error}</p> : null}
 
         {!isLoading && !error ? (
           medicos.length > 0 ? (
-            <div style={{ display: 'grid', gap: '12px' }}>
+            <div className="data-list">
               {medicos.map((medico) => (
                 <button
                   key={medico.id}
                   type="button"
                   onClick={() => handleSelect(medico)}
-                  style={{
-                    textAlign: 'left',
-                    border: '1px solid #d9e6f2',
-                    backgroundColor: '#ffffff',
-                    borderRadius: '14px',
-                    padding: '16px',
-                    cursor: 'pointer',
-                  }}
+                  className="action-card"
                 >
                   <strong style={{ display: 'block', color: '#123047' }}>
                     {medico.nombreCompleto}
@@ -104,9 +129,11 @@ export function MedicosPage() {
               ))}
             </div>
           ) : (
-            <p style={{ color: '#4f677a' }}>
-              No encontramos médicos para esta especialidad por ahora.
-            </p>
+            <section className="empty-state">
+              <p style={{ margin: 0 }}>
+                No encontramos médicos para esta especialidad por ahora.
+              </p>
+            </section>
           )
         ) : null}
       </section>

@@ -1,5 +1,9 @@
 import { useState, type PropsWithChildren } from 'react'
-import { authService, type LoginPayload } from '../services/auth.service'
+import {
+  authService,
+  type LoginPayload,
+  type RegisterPayload,
+} from '../services/auth.service'
 import { tokenService } from '../services/token.service'
 import { formatUserName, getRoleFromToken, getUserNameFromToken } from '../utils/auth'
 import { AuthContext } from './auth-context'
@@ -20,6 +24,10 @@ export function AuthProvider({ children }: PropsWithChildren) {
     setToken(accessToken)
   }
 
+  const register = async (payload: RegisterPayload) => {
+    await authService.register(payload)
+  }
+
   const logout = () => {
     tokenService.clearToken()
     setToken(null)
@@ -33,6 +41,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
         role,
         userName,
         login,
+        register,
         logout,
       }}
     >

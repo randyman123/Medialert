@@ -6,8 +6,25 @@ export interface LoginPayload {
   contrasena: string
 }
 
+export interface RegisterPayload {
+  nombreCompleto: string
+  correo: string
+  contrasena: string
+}
+
 interface LoginResponse {
   accessToken: string
+}
+
+function getAuthErrorMessage(error: unknown, fallback: string) {
+  const axiosError = error as AxiosError<{ message?: string | string[] }>
+  const backendMessage = axiosError.response?.data?.message
+
+  if (Array.isArray(backendMessage)) {
+    return backendMessage[0] ?? fallback
+  }
+
+  return backendMessage ?? fallback
 }
 
 export const authService = {
@@ -20,14 +37,16 @@ export const authService = {
 
       return data
     } catch (error) {
-      const axiosError = error as AxiosError<{ message?: string | string[] }>
-      const backendMessage = axiosError.response?.data?.message
+      throw new Error(getAuthErrorMessage(error, 'No se pudo iniciar sesión'))
+    }
+  },
 
-      if (Array.isArray(backendMessage)) {
-        throw new Error(backendMessage[0] ?? 'No se pudo iniciar sesión')
-      }
-
-      throw new Error(backendMessage ?? 'No se pudo iniciar sesión')
+  async register(payload: RegisterPayload) {
+    try {
+      const { data } = await api.post('/autenticacion/registrar', payload)
+      return data
+    } catch (error) {
+      throw new Error(getAuthErrorMessage(error, 'No se pudo completar el registro'))
     }
   },
 }

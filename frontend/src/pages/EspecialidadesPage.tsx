@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
+import { useAuth } from '../hooks/useAuth'
 import { DashboardLayout } from '../layouts/DashboardLayout'
 import {
   especialidadesService,
@@ -8,6 +9,9 @@ import {
 
 export function EspecialidadesPage() {
   const navigate = useNavigate()
+  const { role } = useAuth()
+  const isRecepcion = role === 'RECEPCION'
+  const isAdmin = role === 'ADMIN'
   const [especialidades, setEspecialidades] = useState<Especialidad[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState('')
@@ -43,46 +47,74 @@ export function EspecialidadesPage() {
 
   return (
     <DashboardLayout>
-      <section>
-        <h2 style={{ marginTop: 0, color: '#123047' }}>Especialidades</h2>
-        <p style={{ color: '#4f677a' }}>
-          Selecciona una especialidad para ver los médicos disponibles.
-        </p>
+      <section className="page">
+        <header className="page-header">
+          <h2 className="page-title">
+            {isRecepcion
+              ? 'Gestión de agenda'
+              : isAdmin
+                ? 'Gestión médica institucional'
+                : 'Especialidades'}
+          </h2>
+          <p className="page-subtitle">
+            {isRecepcion
+              ? 'Selecciona una especialidad para revisar los médicos asociados y su disponibilidad operativa.'
+              : isAdmin
+                ? 'Listado de especialidades disponibles en el sistema.'
+                : 'Selecciona una especialidad para ver los médicos disponibles.'}
+          </p>
+        </header>
 
-        <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', marginTop: '20px' }}>
-          <Link to="/dashboard" style={{ color: '#16a34a' }}>
+        {isRecepcion ? (
+          <section className="panel" style={{ marginBottom: '20px' }}>
+            <strong style={{ display: 'block', color: '#123047' }}>
+              Vista operativa de recepción
+            </strong>
+            <p className="page-subtitle" style={{ marginBottom: 0 }}>
+              Este módulo permite navegar la agenda clínica por especialidad y médico
+              para consultar bloques horarios disponibles.
+            </p>
+          </section>
+        ) : isAdmin ? (
+          <section className="panel" style={{ marginBottom: '20px' }}>
+            <strong style={{ display: 'block', color: '#123047' }}>
+              Vista institucional para administración del sistema
+            </strong>
+            <p className="page-subtitle" style={{ marginBottom: 0 }}>
+              Permite visualizar la estructura médica registrada y supervisar las
+              especialidades disponibles. Las funciones de edición se integrarán
+              próximamente.
+            </p>
+          </section>
+        ) : null}
+
+        <div className="page-nav">
+          <Link to="/dashboard" className="page-nav-link">
             Volver al inicio
           </Link>
         </div>
 
-        {isLoading ? <p>Cargando especialidades...</p> : null}
-        {error ? <p style={{ color: '#b91c1c' }}>{error}</p> : null}
+        {isLoading ? <p className="alert alert-info">Cargando especialidades...</p> : null}
+        {error ? <p className="alert alert-error">{error}</p> : null}
 
         {!isLoading && !error ? (
           especialidades.length > 0 ? (
-            <div style={{ display: 'grid', gap: '12px', marginTop: '24px' }}>
+            <div className="data-list">
               {especialidades.map((especialidad) => (
                 <button
                   key={especialidad.id}
                   type="button"
                   onClick={() => handleSelect(especialidad)}
-                  style={{
-                    textAlign: 'left',
-                    border: '1px solid #d9e6f2',
-                    backgroundColor: '#ffffff',
-                    borderRadius: '14px',
-                    padding: '16px',
-                    cursor: 'pointer',
-                  }}
+                  className="action-card"
                 >
                   {especialidad.nombre}
                 </button>
               ))}
             </div>
           ) : (
-            <p style={{ marginTop: '24px', color: '#4f677a' }}>
-              Todavía no hay especialidades para mostrar.
-            </p>
+            <section className="empty-state">
+              <p style={{ margin: 0 }}>Todavía no hay especialidades para mostrar.</p>
+            </section>
           )
         ) : null}
       </section>

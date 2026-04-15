@@ -11,12 +11,12 @@ export function AuthLayout({ children }: PropsWithChildren) {
       }}
     >
       <section
+        className="panel panel-elevated"
         style={{
           width: '100%',
-          maxWidth: '420px',
-          backgroundColor: '#ffffff',
+          maxWidth: '440px',
           borderRadius: '20px',
-          padding: '32px',
+          padding: '30px',
           boxShadow: '0 20px 60px rgba(18, 48, 71, 0.12)',
           border: '1px solid rgba(18, 48, 71, 0.08)',
         }}

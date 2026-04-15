@@ -63,101 +63,101 @@ export function MisReservasPage() {
 
   return (
     <DashboardLayout>
-      <section>
-        <h2 style={{ marginTop: 0, color: '#123047' }}>Mis reservas</h2>
-        <p style={{ color: '#4f677a' }}>
-          {showMisReservas
-            ? 'Aquí puedes revisar tus reservas activas y cancelarlas si es necesario.'
-            : 'Esta vista no aplica para tu perfil actual.'}
-        </p>
+      <section className="page">
+        <header className="page-header">
+          <h2 className="page-title">Mis reservas</h2>
+          <p className="page-subtitle">
+            {showMisReservas
+              ? 'Aquí puedes revisar tus reservas activas y cancelarlas si es necesario.'
+              : 'Esta vista no aplica para tu perfil actual.'}
+          </p>
+        </header>
 
-        <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', margin: '16px 0 24px' }}>
-          <Link to="/dashboard" style={{ color: '#16a34a' }}>
+        <div className="page-nav">
+          <Link to="/dashboard" className="page-nav-link">
             Volver al inicio
           </Link>
         </div>
 
         {!showMisReservas ? (
-          <section
-            style={{
-              padding: '20px',
-              borderRadius: '16px',
-              backgroundColor: '#f8fafc',
-              border: '1px solid #d9e6f2',
-            }}
-          >
-            <p style={{ margin: 0, color: '#4f677a' }}>
+          <section className="empty-state">
+            <p style={{ margin: 0 }}>
               Si necesitas revisar el flujo completo, puedes volver al inicio y
               continuar desde especialidades.
             </p>
           </section>
         ) : null}
 
-        {showMisReservas && isLoading ? <p>Cargando reservas...</p> : null}
-        {showMisReservas && successMessage ? (
-          <p style={{ color: '#15803d' }}>{successMessage}</p>
+        {showMisReservas && isLoading ? (
+          <p className="alert alert-info">Cargando reservas...</p>
         ) : null}
-        {showMisReservas && error ? <p style={{ color: '#b91c1c' }}>{error}</p> : null}
+        {showMisReservas && successMessage ? (
+          <p className="alert alert-success">{successMessage}</p>
+        ) : null}
+        {showMisReservas && error ? <p className="alert alert-error">{error}</p> : null}
 
         {showMisReservas && !isLoading && !error ? (
           reservas.length > 0 ? (
-            <div style={{ display: 'grid', gap: '14px', marginTop: '24px' }}>
+            <div className="data-list">
               {reservas.map((reserva) => (
-                <article
-                  key={reserva.id}
-                  style={{
-                    border: '1px solid #d9e6f2',
-                    borderRadius: '16px',
-                    padding: '18px',
-                    backgroundColor: '#ffffff',
-                  }}
-                >
-                  <strong style={{ display: 'block', color: '#123047' }}>
-                    {reserva.medico.nombreCompleto}
-                  </strong>
-                  <p style={{ margin: '8px 0', color: '#4f677a' }}>
-                    Fecha: {formatDateTime(reserva.bloqueHorario.inicio)}
+                <article key={reserva.id} className="data-row">
+                  <strong className="data-row-title">{reserva.medico.nombreCompleto}</strong>
+                  <p className="data-row-meta">Fecha: {formatDateTime(reserva.bloqueHorario.inicio)}</p>
+                  <p className="data-row-meta">
+                    Modalidad:{' '}
+                    {reserva.modalidad === 'TELEMEDICINA' ? 'Telemedicina' : 'Presencial'}
                   </p>
-                  <p style={{ margin: '8px 0', color: '#4f677a' }}>
-                    Estado: {reserva.estado}
-                  </p>
-                  <p style={{ margin: '8px 0 16px', color: '#4f677a' }}>
-                    Motivo: {reserva.motivo || 'Sin motivo'}
-                  </p>
+                  <p className="data-row-meta">Estado: {reserva.estado}</p>
+                  <p className="data-row-meta">Motivo: {reserva.motivo || 'Sin motivo'}</p>
+
+                  {reserva.modalidad === 'TELEMEDICINA' ? (
+                    reserva.linkTelemedicina ? (
+                      <section className="reservation-callout reservation-callout-ready">
+                        <p className="reservation-callout-title">Videollamada disponible</p>
+                        <p className="reservation-callout-copy">
+                          Tu sala ya está lista para ingresar cuando corresponda.
+                        </p>
+                        <div className="data-row-actions">
+                          <a
+                            href={reserva.linkTelemedicina}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="btn btn-primary"
+                          >
+                            Entrar a videollamada
+                          </a>
+                        </div>
+                      </section>
+                    ) : (
+                      <section className="reservation-callout reservation-callout-pending">
+                        <p className="reservation-callout-title">Videollamada pendiente</p>
+                        <p className="reservation-callout-copy">
+                          El link de sala aún no está disponible para esta teleconsulta.
+                        </p>
+                      </section>
+                    )
+                  ) : null}
 
                   {reserva.estado !== 'CANCELADA' ? (
-                    <button
-                      type="button"
-                      onClick={() => handleCancelar(reserva.id)}
-                      disabled={cancelingId === reserva.id}
-                      style={{
-                        border: 0,
-                        borderRadius: '12px',
-                        padding: '10px 16px',
-                        backgroundColor: '#b91c1c',
-                        color: '#ffffff',
-                        cursor: cancelingId === reserva.id ? 'wait' : 'pointer',
-                      }}
-                    >
-                      {cancelingId === reserva.id ? 'Cancelando...' : 'Cancelar reserva'}
-                    </button>
+                    <div className="data-row-actions">
+                      <button
+                        type="button"
+                        onClick={() => handleCancelar(reserva.id)}
+                        disabled={cancelingId === reserva.id}
+                        className="btn btn-danger"
+                      >
+                        {cancelingId === reserva.id ? 'Cancelando...' : 'Cancelar reserva'}
+                      </button>
+                    </div>
                   ) : null}
                 </article>
               ))}
             </div>
           ) : (
-            <section
-              style={{
-                marginTop: '24px',
-                padding: '20px',
-                borderRadius: '16px',
-                backgroundColor: '#f8fafc',
-                border: '1px solid #d9e6f2',
-              }}
-            >
-              <p style={{ margin: 0, color: '#4f677a' }}>
-                Aún no tienes reservas activas. Puedes volver al inicio y crear
-                una nueva reserva cuando quieras.
+            <section className="empty-state">
+              <p style={{ margin: 0 }}>
+                Aún no tienes reservas activas. Puedes volver al inicio y crear una
+                nueva reserva cuando quieras.
               </p>
             </section>
           )

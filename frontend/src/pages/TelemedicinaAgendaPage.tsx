@@ -1,10 +1,9 @@
 import { useEffect, useState } from 'react'
-import { Link, useSearchParams } from 'react-router-dom'
-import { useAuth } from '../hooks/useAuth'
+import { Link, useParams, useSearchParams } from 'react-router-dom'
 import { DashboardLayout } from '../layouts/DashboardLayout'
-import { agendaService } from '../services/agenda.service'
 import type { BloqueDisponible } from '../services/medicos.service'
-import { reservasService } from '../services/reservas.service'
+import { telemedicinaService } from '../services/telemedicina.service'
+import type { Reserva } from '../services/reservas.service'
 import { formatDateLabel, formatHour } from '../utils/format'
 
 function getToday() {
@@ -21,11 +20,9 @@ function addDays(value: string, days: number) {
   const date = new Date(year, (month ?? 1) - 1, day ?? 1)
   date.setDate(date.getDate() + days)
 
-  const nextYear = date.getFullYear()
-  const nextMonth = String(date.getMonth() + 1).padStart(2, '0')
-  const nextDay = String(date.getDate()).padStart(2, '0')
-
-  return `${nextYear}-${nextMonth}-${nextDay}`
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(
+    date.getDate(),
+  ).padStart(2, '0')}`
 }
 
 function getUpcomingDates(startDate: string, total = 7) {
@@ -37,19 +34,16 @@ interface AvailableDay {
   bloques: BloqueDisponible[]
 }
 
-interface ReservationConfirmation {
+interface TelemedicinaConfirmation {
   fecha: string
   inicio: string
   fin: string
+  linkTelemedicina?: string | null
 }
 
-export function AgendaPage() {
-  const { role } = useAuth()
-  const isRecepcion = role === 'RECEPCION'
-  const isAdmin = role === 'ADMIN'
-  const isInstitutionalView = isRecepcion || isAdmin
+export function TelemedicinaAgendaPage() {
+  const { medicoId } = useParams()
   const [searchParams] = useSearchParams()
-  const medicoId = searchParams.get('medicoId')
   const medicoNombre = searchParams.get('medicoNombre') ?? ''
   const especialidadId = searchParams.get('especialidadId') ?? ''
   const especialidadNombre = searchParams.get('especialidadNombre') ?? ''
@@ -60,11 +54,11 @@ export function AgendaPage() {
   const [error, setError] = useState('')
   const [selectedBloqueId, setSelectedBloqueId] = useState<number | null>(null)
   const [motivo, setMotivo] = useState('')
+  const [observaciones, setObservaciones] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState('')
-  const [confirmation, setConfirmation] = useState<ReservationConfirmation | null>(
-    null,
-  )
+  const [confirmation, setConfirmation] = useState<TelemedicinaConfirmation | null>(null)
+  const [lastReservation, setLastReservation] = useState<Reserva | null>(null)
 
   useEffect(() => {
     if (!medicoId) {
@@ -85,10 +79,7 @@ export function AgendaPage() {
         const upcomingDates = getUpcomingDates(getToday())
         const results = await Promise.allSettled(
           upcomingDates.map(async (fecha) => {
-            const data = await agendaService.obtenerPorMedicoYFecha(
-              Number(medicoId),
-              fecha,
-            )
+            const data = await telemedicinaService.listarHorarios(Number(medicoId), fecha)
 
             return {
               fecha,
@@ -101,8 +92,7 @@ export function AgendaPage() {
           .filter(
             (
               result,
-            ): result is PromiseFulfilledResult<AvailableDay> =>
-              result.status === 'fulfilled',
+            ): result is PromiseFulfilledResult<AvailableDay> => result.status === 'fulfilled',
           )
           .map((result) => result.value)
           .filter((day) => day.bloques.length > 0)
@@ -114,12 +104,11 @@ export function AgendaPage() {
           setBloques(nextAvailableDays[0].bloques)
         }
       } catch (loadError) {
-        const message =
+        setError(
           loadError instanceof Error
             ? loadError.message
-            : 'No se pudo cargar la agenda'
-
-        setError(message)
+            : 'No se pudo cargar la agenda de telemedicina',
+        )
       } finally {
         setIsLoading(false)
       }
@@ -151,6 +140,7 @@ export function AgendaPage() {
     setSelectedBloqueId(null)
     setSubmitError('')
     setConfirmation(null)
+    setLastReservation(null)
   }
 
   const handleReservar = async () => {
@@ -171,20 +161,25 @@ export function AgendaPage() {
     try {
       const selectedBloque = bloques.find((bloque) => bloque.id === selectedBloqueId)
 
-      await reservasService.crear({
+      const reserva = await telemedicinaService.reservar({
         bloqueHorarioId: selectedBloqueId,
         motivo: motivo.trim(),
+        observaciones: observaciones.trim() || undefined,
+        generarSalaAutomaticamente: true,
       })
+
+      setLastReservation(reserva)
 
       if (selectedBloque) {
         setConfirmation({
           fecha: fechaSeleccionada,
           inicio: selectedBloque.inicio,
           fin: selectedBloque.fin,
+          linkTelemedicina: reserva.linkTelemedicina ?? null,
         })
       }
 
-      const refreshed = await agendaService.obtenerPorMedicoYFecha(
+      const refreshed = await telemedicinaService.listarHorarios(
         Number(medicoId),
         fechaSeleccionada,
       )
@@ -200,33 +195,23 @@ export function AgendaPage() {
       )
 
       setMotivo('')
+      setObservaciones('')
       setSelectedBloqueId(null)
     } catch (reservationError) {
-      const message =
+      setSubmitError(
         reservationError instanceof Error
           ? reservationError.message
-          : 'No se pudo crear la reserva'
-
-      setSubmitError(message)
+          : 'No se pudo reservar la telemedicina',
+      )
     } finally {
       setIsSubmitting(false)
     }
   }
 
-  const totalBloques = bloques.length
-  const bloquesDisponibles = bloques.filter((bloque) => bloque.estado === 'DISPONIBLE').length
-  const bloquesNoDisponibles = totalBloques - bloquesDisponibles
-
   return (
     <DashboardLayout>
       <section className="page">
-        <h2 className="page-title">
-          {isRecepcion
-            ? 'Gestión de agenda operativa'
-            : isAdmin
-              ? 'Visualización institucional de agenda'
-              : 'Agenda disponible'}
-        </h2>
+        <h2 className="page-title">Agenda de telemedicina</h2>
         <p className="page-subtitle" style={{ marginBottom: '8px' }}>
           Especialidad: <strong>{especialidadNombre || 'Sin especialidad'}</strong>
         </p>
@@ -234,45 +219,22 @@ export function AgendaPage() {
           Médico: <strong>{medicoNombre || 'Sin médico seleccionado'}</strong>
         </p>
 
-        {isRecepcion ? (
-          <section className="panel" style={{ marginBottom: '20px' }}>
-            <strong style={{ display: 'block', color: '#123047' }}>
-              Vista operativa para recepción
-            </strong>
-            <p className="page-subtitle" style={{ marginBottom: 0 }}>
-              Aquí puedes revisar disponibilidad y bloques horarios del profesional.
-              Esta pantalla no corresponde al flujo personal de reserva del paciente.
-            </p>
-          </section>
-        ) : isAdmin ? (
-          <section className="panel" style={{ marginBottom: '20px' }}>
-            <strong style={{ display: 'block', color: '#123047' }}>
-              Vista institucional para administración
-            </strong>
-            <p className="page-subtitle" style={{ marginBottom: 0 }}>
-              Permite supervisar disponibilidad y bloques horarios del profesional
-              desde una perspectiva del sistema, sin exponer acciones de reserva
-              personal.
-            </p>
-          </section>
-        ) : null}
-
         <div className="page-nav">
           <Link to="/dashboard" className="page-nav-link">
             Volver al inicio
           </Link>
-          <Link to="/especialidades" className="page-nav-link">
-            Volver a especialidades
+          <Link to="/telemedicina" className="page-nav-link">
+            Volver a telemedicina
           </Link>
           <Link
-            to={`/medicos?especialidadId=${especialidadId}&especialidadNombre=${encodeURIComponent(especialidadNombre)}`}
+            to={`/telemedicina/medicos/${medicoId ? especialidadId : ''}?especialidadNombre=${encodeURIComponent(especialidadNombre)}`}
             className="page-nav-link"
           >
             Volver a médicos
           </Link>
         </div>
 
-        {confirmation && !isInstitutionalView ? (
+        {confirmation ? (
           <section
             style={{
               marginBottom: '24px',
@@ -283,29 +245,37 @@ export function AgendaPage() {
             }}
           >
             <h3 style={{ margin: '0 0 8px', color: '#166534' }}>
-              Reserva confirmada
+              Telemedicina confirmada
             </h3>
             <p style={{ margin: 0, color: '#166534' }}>
-              Tu hora con <strong>{medicoNombre}</strong> quedó agendada para{' '}
+              Tu atención remota con <strong>{medicoNombre}</strong> quedó agendada para{' '}
               <strong>{formatDateLabel(confirmation.fecha)}</strong>, de{' '}
               <strong>{formatHour(confirmation.inicio)}</strong> a{' '}
               <strong>{formatHour(confirmation.fin)}</strong>.
             </p>
-
-            <div
-              style={{
-                display: 'flex',
-                gap: '12px',
-                flexWrap: 'wrap',
-                marginTop: '16px',
-              }}
-            >
-              <Link to="/mis-reservas" style={{ color: '#166534', fontWeight: 700 }}>
-                Ir a mis reservas
-              </Link>
-              <Link to="/dashboard" style={{ color: '#166534', fontWeight: 700 }}>
-                Volver al inicio
-              </Link>
+            <div style={{ marginTop: '14px', display: 'grid', gap: '10px' }}>
+              {confirmation.linkTelemedicina ? (
+                <>
+                  <p style={{ margin: 0, color: '#166534' }}>
+                    La sala ya está disponible para tu teleconsulta.
+                  </p>
+                  <div className="data-row-actions">
+                    <a
+                      href={confirmation.linkTelemedicina}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="btn btn-primary"
+                    >
+                      Entrar a videollamada
+                    </a>
+                  </div>
+                </>
+              ) : (
+                <p style={{ margin: 0, color: '#166534' }}>
+                  Aún no hay link de sala disponible. Cuando se genere, podrás verlo en
+                  esta confirmación y también en Mis reservas.
+                </p>
+              )}
             </div>
           </section>
         ) : null}
@@ -350,57 +320,33 @@ export function AgendaPage() {
 
               <section className="panel panel-elevated">
                 <h3 style={{ marginTop: 0, color: '#123047' }}>
-                  {isInstitutionalView
-                    ? 'Bloques horarios del día seleccionado'
-                    : 'Horarios del día seleccionado'}
+                  Horarios del día seleccionado
                 </h3>
                 <p className="page-subtitle" style={{ marginTop: 0 }}>
                   {fechaSeleccionada
-                    ? isInstitutionalView
-                      ? `Mostrando bloques para ${formatDateLabel(fechaSeleccionada)}.`
-                      : `Mostrando horarios para ${formatDateLabel(fechaSeleccionada)}.`
+                    ? `Mostrando horarios para ${formatDateLabel(fechaSeleccionada)}.`
                     : 'Selecciona un día para ver sus horarios.'}
                 </p>
-
-                {isInstitutionalView && fechaSeleccionada ? (
-                  <section
-                    className="panel"
-                    style={{ marginTop: '20px', marginBottom: '20px' }}
-                  >
-                    <strong style={{ display: 'block', color: '#123047' }}>
-                      Resumen del día
-                    </strong>
-                    <p className="page-subtitle" style={{ margin: '8px 0 0' }}>
-                      {bloquesDisponibles} bloques disponibles y {bloquesNoDisponibles}{' '}
-                      no disponibles para {formatDateLabel(fechaSeleccionada)}.
-                    </p>
-                  </section>
-                ) : null}
 
                 <div style={{ display: 'grid', gap: '12px', marginTop: '20px' }}>
                   {bloques.map((bloque) => (
                     <button
                       key={bloque.id}
                       type="button"
-                      onClick={
-                        isInstitutionalView
-                          ? undefined
-                          : () => {
-                              setSelectedBloqueId(bloque.id)
-                              setSubmitError('')
-                              setConfirmation(null)
-                            }
-                      }
+                      onClick={() => {
+                        setSelectedBloqueId(bloque.id)
+                        setSubmitError('')
+                        setConfirmation(null)
+                        setLastReservation(null)
+                      }}
                       style={{
                         border: '1px solid #d9e6f2',
                         backgroundColor:
-                          !isInstitutionalView && selectedBloqueId === bloque.id
-                            ? '#e8f7ee'
-                            : '#ffffff',
+                          selectedBloqueId === bloque.id ? '#e8f7ee' : '#ffffff',
                         borderRadius: '14px',
                         padding: '16px',
                         textAlign: 'left',
-                        cursor: isInstitutionalView ? 'default' : 'pointer',
+                        cursor: 'pointer',
                       }}
                     >
                       <strong style={{ display: 'block', color: '#123047' }}>
@@ -411,33 +357,9 @@ export function AgendaPage() {
                   ))}
                 </div>
 
-                {isRecepcion && bloques.length > 0 ? (
+                {bloques.length > 0 ? (
                   <section className="panel" style={{ marginTop: '24px' }}>
-                    <h4 style={{ marginTop: 0, color: '#123047' }}>Uso de esta vista</h4>
-                    <p className="page-subtitle" style={{ marginBottom: 0 }}>
-                      Recepción puede consultar la agenda del profesional, identificar
-                      disponibilidad y orientar la coordinación de atención sin mostrar
-                      el formulario de reserva personal del paciente.
-                    </p>
-                  </section>
-                ) : null}
-
-                {isAdmin && bloques.length > 0 ? (
-                  <section className="panel" style={{ marginTop: '24px' }}>
-                    <h4 style={{ marginTop: 0, color: '#123047' }}>
-                      Supervisión institucional
-                    </h4>
-                    <p className="page-subtitle" style={{ marginBottom: 0 }}>
-                      Administración puede revisar la disponibilidad visible del
-                      profesional y la estructura de bloques horarios del sistema. Las
-                      funciones de edición se integrarán próximamente.
-                    </p>
-                  </section>
-                ) : null}
-
-                {!isInstitutionalView && bloques.length > 0 ? (
-                  <section className="panel" style={{ marginTop: '24px' }}>
-                    <h4 style={{ marginTop: 0, color: '#123047' }}>Reservar horario</h4>
+                    <h4 style={{ marginTop: 0, color: '#123047' }}>Reservar atención remota</h4>
 
                     <label className="form-label">
                       Motivo
@@ -445,7 +367,18 @@ export function AgendaPage() {
                         type="text"
                         value={motivo}
                         onChange={(event) => setMotivo(event.target.value)}
-                        placeholder="Ej: control general"
+                        placeholder="Ej: control de seguimiento"
+                        className="field"
+                      />
+                    </label>
+
+                    <label className="form-label" style={{ marginTop: '12px' }}>
+                      Observaciones
+                      <textarea
+                        value={observaciones}
+                        onChange={(event) => setObservaciones(event.target.value)}
+                        placeholder="Información adicional para la consulta"
+                        rows={3}
                         className="field"
                       />
                     </label>
@@ -463,8 +396,15 @@ export function AgendaPage() {
                       className="btn btn-success"
                       style={{ marginTop: '16px' }}
                     >
-                      {isSubmitting ? 'Reservando...' : 'Reservar'}
+                      {isSubmitting ? 'Reservando...' : 'Reservar telemedicina'}
                     </button>
+
+                    {lastReservation && !lastReservation.linkTelemedicina ? (
+                      <p className="alert alert-info" style={{ marginTop: '16px' }}>
+                        La reserva fue creada, pero el link de videollamada todavía no
+                        está disponible.
+                      </p>
+                    ) : null}
                   </section>
                 ) : null}
               </section>
@@ -475,8 +415,8 @@ export function AgendaPage() {
                 Sin horarios próximos disponibles
               </h3>
               <p style={{ margin: 0, color: '#4f677a' }}>
-                Este médico no tiene horas visibles en los próximos días. Puedes volver
-                a médicos y revisar otra opción.
+                Este médico no tiene horas remotas visibles en los próximos días.
+                Puedes volver y revisar otra opción.
               </p>
             </section>
           )
