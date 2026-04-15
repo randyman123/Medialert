@@ -12,13 +12,28 @@ const LOCAL_CORS_ORIGINS = [
   'http://127.0.0.1:3000',
 ];
 
+function normalizarOrigin(value: string) {
+  try {
+    return new URL(value).origin;
+  } catch {
+    return value.trim();
+  }
+}
+
 function obtenerCorsOrigins() {
   const envOrigins =
     process.env.CORS_ORIGINS?.split(',')
-      .map((origin) => origin.trim())
+      .map((origin) => normalizarOrigin(origin))
       .filter(Boolean) ?? [];
 
-  return [...new Set([...LOCAL_CORS_ORIGINS, ...envOrigins])];
+  const selfOrigins = [
+    process.env.RENDER_EXTERNAL_URL,
+    process.env.BACKEND_PUBLIC_URL,
+  ]
+    .filter(Boolean)
+    .map((origin) => normalizarOrigin(origin!));
+
+  return [...new Set([...LOCAL_CORS_ORIGINS, ...selfOrigins, ...envOrigins])];
 }
 
 async function bootstrap() {
