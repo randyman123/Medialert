@@ -23,9 +23,7 @@ export function LoginForm() {
       navigate('/dashboard', { replace: true })
     } catch (submitError) {
       const message =
-        submitError instanceof Error
-          ? submitError.message
-          : 'No se pudo iniciar sesión'
+        submitError instanceof Error ? submitError.message : 'No se pudo iniciar sesión'
 
       setError(message)
     } finally {
@@ -34,7 +32,7 @@ export function LoginForm() {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="form-grid" style={{ marginTop: '24px' }}>
+    <form onSubmit={handleSubmit} className="form-grid">
       <label className="form-label">
         Correo
         <input
@@ -68,7 +66,7 @@ export function LoginForm() {
 
       <p className="auth-footnote">
         ¿Aún no tienes cuenta?{' '}
-        <Link to="/register" className="page-nav-link">
+        <Link to="/register" className="auth-inline-link">
           Registrarse
         </Link>
       </p>

@@ -26,9 +26,7 @@ export function TelemedicinaMedicosPage() {
         setMedicos(data.medicos)
       } catch (loadError) {
         setError(
-          loadError instanceof Error
-            ? loadError.message
-            : 'No se pudieron cargar los médicos de telemedicina',
+          loadError instanceof Error ? loadError.message : 'No se pudieron cargar los médicos de telemedicina',
         )
       } finally {
         setIsLoading(false)
@@ -39,9 +37,7 @@ export function TelemedicinaMedicosPage() {
   }, [especialidadId])
 
   const handleSelect = (medico: Medico) => {
-    navigate(
-      `/telemedicina/agenda/${medico.id}?especialidadId=${especialidadId ?? ''}&especialidadNombre=${encodeURIComponent(especialidadNombre)}&medicoNombre=${encodeURIComponent(medico.nombreCompleto)}`,
-    )
+    navigate(`/telemedicina/agenda/${medico.id}?especialidadId=${especialidadId ?? ''}&especialidadNombre=${encodeURIComponent(especialidadNombre)}&medicoNombre=${encodeURIComponent(medico.nombreCompleto)}`)
   }
 
   return (
@@ -49,19 +45,12 @@ export function TelemedicinaMedicosPage() {
       <section className="page">
         <header className="page-header">
           <h2 className="page-title">Médicos para telemedicina</h2>
-          <p className="page-subtitle">
-            Especialidad seleccionada:{' '}
-            <strong>{especialidadNombre || 'Sin especialidad'}</strong>
-          </p>
+          <p className="page-subtitle">Especialidad seleccionada: <strong>{especialidadNombre || 'Sin especialidad'}</strong></p>
         </header>
 
         <div className="page-nav">
-          <Link to="/dashboard" className="page-nav-link">
-            Volver al inicio
-          </Link>
-          <Link to="/telemedicina" className="page-nav-link">
-            Volver a telemedicina
-          </Link>
+          <Link to="/dashboard" className="page-nav-link">Volver al inicio</Link>
+          <Link to="/telemedicina" className="page-nav-link">Volver a telemedicina</Link>
         </div>
 
         {isLoading ? <p className="alert alert-info">Cargando médicos...</p> : null}
@@ -71,26 +60,18 @@ export function TelemedicinaMedicosPage() {
           medicos.length > 0 ? (
             <div className="data-list">
               {medicos.map((medico) => (
-                <button
-                  key={medico.id}
-                  type="button"
-                  onClick={() => handleSelect(medico)}
-                  className="action-card"
-                >
-                  <strong style={{ display: 'block', color: '#123047' }}>
-                    {medico.nombreCompleto}
-                  </strong>
-                  <span style={{ color: '#4f677a' }}>
-                    {medico.especialidades.map((item) => item.nombre).join(', ')}
-                  </span>
+                <button key={medico.id} type="button" onClick={() => handleSelect(medico)} className="action-card">
+                  <div>
+                    <h3 className="action-card-title">{medico.nombreCompleto}</h3>
+                    <p className="action-card-description">{medico.especialidades.map((item) => item.nombre).join(', ')}</p>
+                  </div>
+                  <span className="action-card-label">Ver horarios remotos</span>
                 </button>
               ))}
             </div>
           ) : (
             <section className="empty-state">
-              <p style={{ margin: 0 }}>
-                No encontramos médicos con agenda remota para esta especialidad.
-              </p>
+              <p style={{ margin: 0 }}>No encontramos médicos con agenda remota para esta especialidad.</p>
             </section>
           )
         ) : null}

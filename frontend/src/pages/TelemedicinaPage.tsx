@@ -30,9 +30,7 @@ export function TelemedicinaPage() {
   }, [])
 
   const handleSelect = (especialidad: Especialidad) => {
-    navigate(
-      `/telemedicina/medicos/${especialidad.id}?especialidadNombre=${encodeURIComponent(especialidad.nombre)}`,
-    )
+    navigate(`/telemedicina/medicos/${especialidad.id}?especialidadNombre=${encodeURIComponent(especialidad.nombre)}`)
   }
 
   return (
@@ -40,15 +38,11 @@ export function TelemedicinaPage() {
       <section className="page">
         <header className="page-header">
           <h2 className="page-title">Telemedicina</h2>
-          <p className="page-subtitle">
-            Selecciona una especialidad para reservar una atención remota.
-          </p>
+          <p className="page-subtitle">Selecciona una especialidad para reservar una atención remota.</p>
         </header>
 
         <div className="page-nav">
-          <Link to="/dashboard" className="page-nav-link">
-            Volver al inicio
-          </Link>
+          <Link to="/dashboard" className="page-nav-link">Volver al inicio</Link>
         </div>
 
         {isLoading ? <p className="alert alert-info">Cargando especialidades...</p> : null}
@@ -58,24 +52,18 @@ export function TelemedicinaPage() {
           especialidades.length > 0 ? (
             <div className="data-list">
               {especialidades.map((especialidad) => (
-                <button
-                  key={especialidad.id}
-                  type="button"
-                  onClick={() => handleSelect(especialidad)}
-                  className="action-card"
-                >
-                  <strong style={{ color: '#123047' }}>{especialidad.nombre}</strong>
-                  <p style={{ margin: '8px 0 0', color: '#4f677a' }}>
-                    Ver médicos y horarios disponibles para videoconsulta.
-                  </p>
+                <button key={especialidad.id} type="button" onClick={() => handleSelect(especialidad)} className="action-card">
+                  <div>
+                    <h3 className="action-card-title">{especialidad.nombre}</h3>
+                    <p className="action-card-description">Ver médicos y horarios disponibles para videoconsulta.</p>
+                  </div>
+                  <span className="action-card-label">Ver opciones</span>
                 </button>
               ))}
             </div>
           ) : (
             <section className="empty-state">
-              <p style={{ margin: 0 }}>
-                Todavía no hay especialidades con telemedicina disponible.
-              </p>
+              <p style={{ margin: 0 }}>Todavía no hay especialidades con telemedicina disponible.</p>
             </section>
           )
         ) : null}

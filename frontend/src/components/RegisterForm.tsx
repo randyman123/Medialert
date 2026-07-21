@@ -55,11 +55,7 @@ export function RegisterForm() {
     setIsSubmitting(true)
 
     try {
-      await register({
-        nombreCompleto: nombre,
-        correo: email,
-        contrasena,
-      })
+      await register({ nombreCompleto: nombre, correo: email, contrasena })
 
       setSuccessMessage('Cuenta creada correctamente. Ahora puedes iniciar sesión.')
       window.setTimeout(() => {
@@ -70,9 +66,7 @@ export function RegisterForm() {
       }, 900)
     } catch (submitError) {
       const message =
-        submitError instanceof Error
-          ? submitError.message
-          : 'No se pudo completar el registro'
+        submitError instanceof Error ? submitError.message : 'No se pudo completar el registro'
 
       setError(message)
     } finally {
@@ -81,7 +75,7 @@ export function RegisterForm() {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="form-grid" style={{ marginTop: '24px' }}>
+    <form onSubmit={handleSubmit} className="form-grid">
       <label className="form-label">
         Nombre completo
         <input
@@ -129,7 +123,7 @@ export function RegisterForm() {
 
       <p className="auth-footnote">
         ¿Ya tienes cuenta?{' '}
-        <Link to="/login" className="page-nav-link">
+        <Link to="/login" className="auth-inline-link">
           Inicia sesión
         </Link>
       </p>

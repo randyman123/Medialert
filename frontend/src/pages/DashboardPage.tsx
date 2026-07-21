@@ -1,4 +1,4 @@
-import { Link, useNavigate } from 'react-router-dom'
+import { Link } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
 import { DashboardLayout } from '../layouts/DashboardLayout'
 
@@ -18,8 +18,7 @@ interface DashboardSection {
 }
 
 export function DashboardPage() {
-  const { logout, role } = useAuth()
-  const navigate = useNavigate()
+  const { role } = useAuth()
   const isPaciente = role === 'PACIENTE'
   const isRecepcion = role === 'RECEPCION'
   const isAdmin = role === 'ADMIN'
@@ -32,15 +31,13 @@ export function DashboardPage() {
           cards: [
             {
               title: 'Reservar hora',
-              description:
-                'Explora especialidades, médicos y próximos horarios disponibles.',
+              description: 'Explora especialidades, médicos y próximos horarios disponibles.',
               tone: 'primary',
               to: '/especialidades',
             },
             {
               title: 'Telemedicina',
-              description:
-                'Reserva atenciones remotas, revisa horarios y entra a videollamadas.',
+              description: 'Reserva atenciones remotas, revisa horarios y entra a videollamadas.',
               tone: 'secondary',
               to: '/telemedicina',
             },
@@ -91,31 +88,29 @@ export function DashboardPage() {
               to: '/archivos-clinicos',
             },
             {
-              title: 'Reportes',
+              title: isRecepcion ? 'Telemedicina institucional' : 'Reportes',
               description: isRecepcion
-                ? 'Los reportes institucionales se incorporarán aquí cuando exista una vista dedicada.'
+                ? 'Acceso a la experiencia remota con la misma navegación del sistema actual.'
                 : 'Espacio preparado para métricas, auditoría y visibilidad ejecutiva.',
               tone: 'secondary',
-              disabled: true,
-              helper: 'Próximamente',
+              to: isRecepcion ? '/telemedicina' : undefined,
+              disabled: !isRecepcion,
+              helper: isRecepcion ? 'Abrir' : 'Próximamente',
             },
           ],
         },
       ]
 
-  const handleLogout = () => {
-    const confirmed = window.confirm('¿Seguro que quieres salir de MediAlert?')
-
-    if (!confirmed) {
-      return
-    }
-
-    logout()
-    navigate('/login', { replace: true })
-  }
+  const highlightedModules = isPaciente
+    ? '5 módulos personales'
+    : isRecepcion
+      ? '3 accesos operativos'
+      : isAdmin
+        ? '2 accesos institucionales'
+        : 'Accesos disponibles'
 
   return (
-    <DashboardLayout showHeaderLogout={false}>
+    <DashboardLayout>
       <section className="page">
         <section className="hero-banner">
           <p className="hero-eyebrow">Inicio MediAlert</p>
@@ -124,7 +119,7 @@ export function DashboardPage() {
             Gestiona reservas, consulta tus módulos disponibles y accede rápido a las
             acciones principales según tu perfil.
           </p>
-          <p className="hero-text" style={{ marginTop: '10px' }}>
+          <p className="hero-text">
             {isPaciente
               ? 'Tienes acceso a tus módulos personales, reservas y seguimiento de atención.'
               : isRecepcion
@@ -133,6 +128,23 @@ export function DashboardPage() {
                   ? 'Tu vista muestra accesos administrativos esenciales sin exponer módulos personales del paciente.'
                   : 'Explora los accesos disponibles según tu perfil actual.'}
           </p>
+
+          <div className="hero-metrics">
+            <div className="hero-metric">
+              <span className="hero-metric-label">Perfil actual</span>
+              <strong className="hero-metric-value">
+                {isPaciente ? 'Paciente' : isRecepcion ? 'Recepción' : isAdmin ? 'Administración' : 'Usuario'}
+              </strong>
+            </div>
+            <div className="hero-metric">
+              <span className="hero-metric-label">Enfoque del panel</span>
+              <strong className="hero-metric-value">{highlightedModules}</strong>
+            </div>
+            <div className="hero-metric">
+              <span className="hero-metric-label">Experiencia</span>
+              <strong className="hero-metric-value">Navegación más clara</strong>
+            </div>
+          </div>
         </section>
 
         {sections.map((section) => (
@@ -148,10 +160,8 @@ export function DashboardPage() {
                 const content = (
                   <>
                     <div>
-                      <strong style={{ display: 'block', fontSize: '1.05rem' }}>{card.title}</strong>
-                      <p className="data-row-meta" style={{ marginTop: '8px' }}>
-                        {card.description}
-                      </p>
+                      <h4 className="action-card-title">{card.title}</h4>
+                      <p className="action-card-description">{card.description}</p>
                     </div>
                     <span className="action-card-label">{card.helper ?? 'Abrir'}</span>
                   </>
@@ -174,29 +184,6 @@ export function DashboardPage() {
             </div>
           </section>
         ))}
-
-        <section>
-          <button
-            type="button"
-            onClick={handleLogout}
-            className="action-card"
-            style={{
-              width: '100%',
-              borderColor: '#f3c5c2',
-              background: '#fff7f7',
-              color: '#8f1f18',
-              minHeight: 'unset',
-            }}
-          >
-            <div>
-              <strong style={{ display: 'block', fontSize: '1rem' }}>Salir</strong>
-              <p style={{ margin: '8px 0 0', color: '#ab2f27' }}>
-                Cierra tu sesión de forma segura cuando termines de usar la app.
-              </p>
-            </div>
-            <span style={{ fontWeight: 700 }}>Cerrar sesión</span>
-          </button>
-        </section>
       </section>
     </DashboardLayout>
   )

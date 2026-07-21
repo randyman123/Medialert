@@ -11,7 +11,6 @@ function getToday() {
   const year = now.getFullYear()
   const month = String(now.getMonth() + 1).padStart(2, '0')
   const day = String(now.getDate()).padStart(2, '0')
-
   return `${year}-${month}-${day}`
 }
 
@@ -19,10 +18,7 @@ function addDays(value: string, days: number) {
   const [year, month, day] = value.split('-').map(Number)
   const date = new Date(year, (month ?? 1) - 1, day ?? 1)
   date.setDate(date.getDate() + days)
-
-  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(
-    date.getDate(),
-  ).padStart(2, '0')}`
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
 }
 
 function getUpcomingDates(startDate: string, total = 7) {
@@ -39,6 +35,12 @@ interface TelemedicinaConfirmation {
   inicio: string
   fin: string
   linkTelemedicina?: string | null
+}
+
+function getBlockStatusClass(status: BloqueDisponible['estado']) {
+  if (status === 'DISPONIBLE') return 'status-badge-success'
+  if (status === 'RESERVADO') return 'status-badge-warning'
+  return 'status-badge-danger'
 }
 
 export function TelemedicinaAgendaPage() {
@@ -80,20 +82,12 @@ export function TelemedicinaAgendaPage() {
         const results = await Promise.allSettled(
           upcomingDates.map(async (fecha) => {
             const data = await telemedicinaService.listarHorarios(Number(medicoId), fecha)
-
-            return {
-              fecha,
-              bloques: data.bloques,
-            }
+            return { fecha, bloques: data.bloques }
           }),
         )
 
         const nextAvailableDays = results
-          .filter(
-            (
-              result,
-            ): result is PromiseFulfilledResult<AvailableDay> => result.status === 'fulfilled',
-          )
+          .filter((result): result is PromiseFulfilledResult<AvailableDay> => result.status === 'fulfilled')
           .map((result) => result.value)
           .filter((day) => day.bloques.length > 0)
 
@@ -104,11 +98,7 @@ export function TelemedicinaAgendaPage() {
           setBloques(nextAvailableDays[0].bloques)
         }
       } catch (loadError) {
-        setError(
-          loadError instanceof Error
-            ? loadError.message
-            : 'No se pudo cargar la agenda de telemedicina',
-        )
+        setError(loadError instanceof Error ? loadError.message : 'No se pudo cargar la agenda de telemedicina')
       } finally {
         setIsLoading(false)
       }
@@ -123,13 +113,8 @@ export function TelemedicinaAgendaPage() {
       return
     }
 
-    const currentDay =
-      availableDays.find((day) => day.fecha === fechaSeleccionada) ?? availableDays[0]
-
-    if (!currentDay) {
-      return
-    }
-
+    const currentDay = availableDays.find((day) => day.fecha === fechaSeleccionada) ?? availableDays[0]
+    if (!currentDay) return
     setFechaSeleccionada(currentDay.fecha)
     setBloques(currentDay.bloques)
   }, [availableDays, fechaSeleccionada])
@@ -160,7 +145,6 @@ export function TelemedicinaAgendaPage() {
 
     try {
       const selectedBloque = bloques.find((bloque) => bloque.id === selectedBloqueId)
-
       const reserva = await telemedicinaService.reservar({
         bloqueHorarioId: selectedBloqueId,
         motivo: motivo.trim(),
@@ -179,18 +163,10 @@ export function TelemedicinaAgendaPage() {
         })
       }
 
-      const refreshed = await telemedicinaService.listarHorarios(
-        Number(medicoId),
-        fechaSeleccionada,
-      )
-
+      const refreshed = await telemedicinaService.listarHorarios(Number(medicoId), fechaSeleccionada)
       setAvailableDays((current) =>
         current
-          .map((day) =>
-            day.fecha === fechaSeleccionada
-              ? { ...day, bloques: refreshed.bloques }
-              : day,
-          )
+          .map((day) => (day.fecha === fechaSeleccionada ? { ...day, bloques: refreshed.bloques } : day))
           .filter((day) => day.bloques.length > 0),
       )
 
@@ -198,11 +174,7 @@ export function TelemedicinaAgendaPage() {
       setObservaciones('')
       setSelectedBloqueId(null)
     } catch (reservationError) {
-      setSubmitError(
-        reservationError instanceof Error
-          ? reservationError.message
-          : 'No se pudo reservar la telemedicina',
-      )
+      setSubmitError(reservationError instanceof Error ? reservationError.message : 'No se pudo reservar la telemedicina')
     } finally {
       setIsSubmitting(false)
     }
@@ -211,70 +183,32 @@ export function TelemedicinaAgendaPage() {
   return (
     <DashboardLayout>
       <section className="page">
-        <h2 className="page-title">Agenda de telemedicina</h2>
-        <p className="page-subtitle" style={{ marginBottom: '8px' }}>
-          Especialidad: <strong>{especialidadNombre || 'Sin especialidad'}</strong>
-        </p>
-        <p className="page-subtitle" style={{ marginTop: 0 }}>
-          Médico: <strong>{medicoNombre || 'Sin médico seleccionado'}</strong>
-        </p>
+        <header className="page-header">
+          <h2 className="page-title">Agenda de telemedicina</h2>
+          <p className="page-subtitle">Especialidad: <strong>{especialidadNombre || 'Sin especialidad'}</strong></p>
+          <p className="page-subtitle">Médico: <strong>{medicoNombre || 'Sin médico seleccionado'}</strong></p>
+        </header>
 
         <div className="page-nav">
-          <Link to="/dashboard" className="page-nav-link">
-            Volver al inicio
-          </Link>
-          <Link to="/telemedicina" className="page-nav-link">
-            Volver a telemedicina
-          </Link>
-          <Link
-            to={`/telemedicina/medicos/${medicoId ? especialidadId : ''}?especialidadNombre=${encodeURIComponent(especialidadNombre)}`}
-            className="page-nav-link"
-          >
-            Volver a médicos
-          </Link>
+          <Link to="/dashboard" className="page-nav-link">Volver al inicio</Link>
+          <Link to="/telemedicina" className="page-nav-link">Volver a telemedicina</Link>
+          <Link to={`/telemedicina/medicos/${medicoId ? especialidadId : ''}?especialidadNombre=${encodeURIComponent(especialidadNombre)}`} className="page-nav-link">Volver a médicos</Link>
         </div>
 
         {confirmation ? (
-          <section
-            style={{
-              marginBottom: '24px',
-              padding: '20px',
-              borderRadius: '18px',
-              backgroundColor: '#ecfdf5',
-              border: '1px solid #86efac',
-            }}
-          >
-            <h3 style={{ margin: '0 0 8px', color: '#166534' }}>
-              Telemedicina confirmada
-            </h3>
-            <p style={{ margin: 0, color: '#166534' }}>
-              Tu atención remota con <strong>{medicoNombre}</strong> quedó agendada para{' '}
-              <strong>{formatDateLabel(confirmation.fecha)}</strong>, de{' '}
-              <strong>{formatHour(confirmation.inicio)}</strong> a{' '}
-              <strong>{formatHour(confirmation.fin)}</strong>.
-            </p>
-            <div style={{ marginTop: '14px', display: 'grid', gap: '10px' }}>
+          <section className="confirmation-card">
+            <h3 className="confirmation-title">Telemedicina confirmada</h3>
+            <p className="confirmation-copy">Tu atención remota con <strong>{medicoNombre}</strong> quedó agendada para <strong>{formatDateLabel(confirmation.fecha)}</strong>, de <strong>{formatHour(confirmation.inicio)}</strong> a <strong>{formatHour(confirmation.fin)}</strong>.</p>
+            <div className="stack-md">
               {confirmation.linkTelemedicina ? (
                 <>
-                  <p style={{ margin: 0, color: '#166534' }}>
-                    La sala ya está disponible para tu teleconsulta.
-                  </p>
+                  <p className="confirmation-copy">La sala ya está disponible para tu teleconsulta.</p>
                   <div className="data-row-actions">
-                    <a
-                      href={confirmation.linkTelemedicina}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="btn btn-primary"
-                    >
-                      Entrar a videollamada
-                    </a>
+                    <a href={confirmation.linkTelemedicina} target="_blank" rel="noreferrer" className="btn btn-primary">Entrar a videollamada</a>
                   </div>
                 </>
               ) : (
-                <p style={{ margin: 0, color: '#166534' }}>
-                  Aún no hay link de sala disponible. Cuando se genere, podrás verlo en
-                  esta confirmación y también en Mis reservas.
-                </p>
+                <p className="confirmation-copy">Aún no hay link de sala disponible. Cuando se genere, podrás verlo en esta confirmación y también en Mis reservas.</p>
               )}
             </div>
           </section>
@@ -287,48 +221,22 @@ export function TelemedicinaAgendaPage() {
           availableDays.length > 0 ? (
             <div className="schedule-grid">
               <section className="panel">
-                <h3 style={{ marginTop: 0, color: '#123047' }}>Días disponibles</h3>
-                <div style={{ display: 'grid', gap: '10px' }}>
+                <h3 className="panel-title">Días disponibles</h3>
+                <div className="selection-list">
                   {availableDays.map((day) => (
-                    <button
-                      key={day.fecha}
-                      type="button"
-                      onClick={() => handleSelectDay(day)}
-                      style={{
-                        border:
-                          fechaSeleccionada === day.fecha
-                            ? '1px solid #16a34a'
-                            : '1px solid #d9e6f2',
-                        backgroundColor:
-                          fechaSeleccionada === day.fecha ? '#e8f7ee' : '#ffffff',
-                        borderRadius: '14px',
-                        padding: '14px 16px',
-                        textAlign: 'left',
-                        cursor: 'pointer',
-                      }}
-                    >
-                      <strong style={{ display: 'block', color: '#123047' }}>
-                        {formatDateLabel(day.fecha)}
-                      </strong>
-                      <span style={{ color: '#4f677a' }}>
-                        {day.bloques.length} horarios disponibles
-                      </span>
+                    <button key={day.fecha} type="button" onClick={() => handleSelectDay(day)} className={`selection-card ${fechaSeleccionada === day.fecha ? 'selection-card-active' : ''}`}>
+                      <span className="selection-card-title">{formatDateLabel(day.fecha)}</span>
+                      <span className="selection-card-copy">{day.bloques.length} horarios disponibles</span>
                     </button>
                   ))}
                 </div>
               </section>
 
               <section className="panel panel-elevated">
-                <h3 style={{ marginTop: 0, color: '#123047' }}>
-                  Horarios del día seleccionado
-                </h3>
-                <p className="page-subtitle" style={{ marginTop: 0 }}>
-                  {fechaSeleccionada
-                    ? `Mostrando horarios para ${formatDateLabel(fechaSeleccionada)}.`
-                    : 'Selecciona un día para ver sus horarios.'}
-                </p>
+                <h3 className="panel-title">Horarios del día seleccionado</h3>
+                <p className="page-subtitle">{fechaSeleccionada ? `Mostrando horarios para ${formatDateLabel(fechaSeleccionada)}.` : 'Selecciona un día para ver sus horarios.'}</p>
 
-                <div style={{ display: 'grid', gap: '12px', marginTop: '20px' }}>
+                <div className="selection-list">
                   {bloques.map((bloque) => (
                     <button
                       key={bloque.id}
@@ -339,71 +247,34 @@ export function TelemedicinaAgendaPage() {
                         setConfirmation(null)
                         setLastReservation(null)
                       }}
-                      style={{
-                        border: '1px solid #d9e6f2',
-                        backgroundColor:
-                          selectedBloqueId === bloque.id ? '#e8f7ee' : '#ffffff',
-                        borderRadius: '14px',
-                        padding: '16px',
-                        textAlign: 'left',
-                        cursor: 'pointer',
-                      }}
+                      className={`selection-card ${selectedBloqueId === bloque.id ? 'selection-card-active' : ''}`}
                     >
-                      <strong style={{ display: 'block', color: '#123047' }}>
-                        {formatHour(bloque.inicio)} - {formatHour(bloque.fin)}
-                      </strong>
-                      <span style={{ color: '#4f677a' }}>{bloque.estado}</span>
+                      <span className="selection-card-title">{formatHour(bloque.inicio)} - {formatHour(bloque.fin)}</span>
+                      <div className="selection-card-tags">
+                        <span className={`status-badge ${getBlockStatusClass(bloque.estado)}`}>{bloque.estado}</span>
+                        <span className="status-badge status-badge-info">TELEMEDICINA</span>
+                      </div>
                     </button>
                   ))}
                 </div>
 
                 {bloques.length > 0 ? (
-                  <section className="panel" style={{ marginTop: '24px' }}>
-                    <h4 style={{ marginTop: 0, color: '#123047' }}>Reservar atención remota</h4>
-
+                  <section className="panel">
+                    <h4 className="panel-title">Reservar atención remota</h4>
                     <label className="form-label">
                       Motivo
-                      <input
-                        type="text"
-                        value={motivo}
-                        onChange={(event) => setMotivo(event.target.value)}
-                        placeholder="Ej: control de seguimiento"
-                        className="field"
-                      />
+                      <input type="text" value={motivo} onChange={(event) => setMotivo(event.target.value)} placeholder="Ej: control de seguimiento" className="field" />
                     </label>
-
-                    <label className="form-label" style={{ marginTop: '12px' }}>
+                    <label className="form-label">
                       Observaciones
-                      <textarea
-                        value={observaciones}
-                        onChange={(event) => setObservaciones(event.target.value)}
-                        placeholder="Información adicional para la consulta"
-                        rows={3}
-                        className="field"
-                      />
+                      <textarea value={observaciones} onChange={(event) => setObservaciones(event.target.value)} placeholder="Información adicional para la consulta" rows={3} className="field" />
                     </label>
-
-                    {submitError ? (
-                      <p className="alert alert-error" style={{ marginTop: '16px' }}>
-                        {submitError}
-                      </p>
-                    ) : null}
-
-                    <button
-                      type="button"
-                      onClick={handleReservar}
-                      disabled={isSubmitting}
-                      className="btn btn-success"
-                      style={{ marginTop: '16px' }}
-                    >
+                    {submitError ? <p className="alert alert-error">{submitError}</p> : null}
+                    <button type="button" onClick={handleReservar} disabled={isSubmitting} className="btn btn-success">
                       {isSubmitting ? 'Reservando...' : 'Reservar telemedicina'}
                     </button>
-
                     {lastReservation && !lastReservation.linkTelemedicina ? (
-                      <p className="alert alert-info" style={{ marginTop: '16px' }}>
-                        La reserva fue creada, pero el link de videollamada todavía no
-                        está disponible.
-                      </p>
+                      <p className="alert alert-info">La reserva fue creada, pero el link de videollamada todavía no está disponible.</p>
                     ) : null}
                   </section>
                 ) : null}
@@ -411,13 +282,8 @@ export function TelemedicinaAgendaPage() {
             </div>
           ) : (
             <section className="empty-state">
-              <h3 style={{ marginTop: 0, color: '#123047' }}>
-                Sin horarios próximos disponibles
-              </h3>
-              <p style={{ margin: 0, color: '#4f677a' }}>
-                Este médico no tiene horas remotas visibles en los próximos días.
-                Puedes volver y revisar otra opción.
-              </p>
+              <h3 style={{ marginTop: 0, color: '#123047' }}>Sin horarios próximos disponibles</h3>
+              <p style={{ margin: 0, color: '#4f677a' }}>Este médico no tiene horas remotas visibles en los próximos días. Puedes volver y revisar otra opción.</p>
             </section>
           )
         ) : null}

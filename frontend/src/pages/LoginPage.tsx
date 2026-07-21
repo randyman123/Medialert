@@ -7,7 +7,7 @@ export function LoginPage() {
   const { isAuthenticated, isLoading } = useAuth()
 
   if (isLoading) {
-    return <p style={{ padding: '24px' }}>Cargando...</p>
+    return <main className="auth-loading">Cargando...</main>
   }
 
   if (isAuthenticated) {
@@ -15,18 +15,21 @@ export function LoginPage() {
   }
 
   return (
-    <AuthLayout>
-      <div className="stack-md" style={{ gap: '6px' }}>
-        <p style={{ margin: 0, color: '#0e7490', fontWeight: 700 }}>MediAlert</p>
-        <h1 className="page-title" style={{ fontSize: '1.9rem' }}>
-          Iniciar sesión
-        </h1>
-        <p className="page-subtitle">
-          Accede al frontend conectado con tu backend NestJS o crea una cuenta nueva.
-        </p>
-      </div>
-
+    <AuthLayout
+      title="Iniciar sesión"
+      description="Accede al frontend conectado con tu backend NestJS y continúa donde quedaste."
+      badge="Portal clínico"
+      footerNote="Tu sesión conserva la autenticación actual y la conexión existente con el backend."
+      heroTitle="Una experiencia de salud digital más ordenada, clara y presentable."
+      heroDescription="MediAlert reúne reservas, telemedicina, documentos y seguimiento en una interfaz institucional más limpia sin alterar el funcionamiento del sistema."
+    >
       <LoginForm />
+
+      <section className="demo-credentials">
+        <p><strong>Credenciales demo</strong></p>
+        <p>Admin: <code>admin@medialert.cl</code> / <code>123456</code></p>
+        <p>Paciente: <code>paciente@medialert.cl</code> / <code>123456</code></p>
+      </section>
     </AuthLayout>
   )
 }

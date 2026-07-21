@@ -28,11 +28,7 @@ export function MedicosPage() {
         const data = await medicosService.listarPorEspecialidad(Number(especialidadId))
         setMedicos(data.datos)
       } catch (loadError) {
-        const message =
-          loadError instanceof Error
-            ? loadError.message
-            : 'No se pudieron cargar los médicos'
-
+        const message = loadError instanceof Error ? loadError.message : 'No se pudieron cargar los médicos'
         setError(message)
       } finally {
         setIsLoading(false)
@@ -58,11 +54,7 @@ export function MedicosPage() {
       <section className="page">
         <header className="page-header">
           <h2 className="page-title">
-            {isRecepcion
-              ? 'Médicos por especialidad'
-              : isAdmin
-                ? 'Profesionales por especialidad'
-                : 'Médicos'}
+            {isRecepcion ? 'Médicos por especialidad' : isAdmin ? 'Profesionales por especialidad' : 'Médicos'}
           </h2>
           <p className="page-subtitle">
             {isRecepcion
@@ -75,35 +67,24 @@ export function MedicosPage() {
         </header>
 
         {isRecepcion ? (
-          <section className="panel" style={{ marginBottom: '20px' }}>
-            <strong style={{ display: 'block', color: '#123047' }}>
-              Paso 2 de la gestión operativa
-            </strong>
-            <p className="page-subtitle" style={{ marginBottom: 0 }}>
-              Selecciona un médico para ver sus bloques horarios disponibles y apoyar
-              la coordinación desde recepción.
+          <section className="panel">
+            <strong className="data-row-title">Paso 2 de la gestión operativa</strong>
+            <p className="page-subtitle">
+              Selecciona un médico para ver sus bloques horarios disponibles y apoyar la coordinación desde recepción.
             </p>
           </section>
         ) : isAdmin ? (
-          <section className="panel" style={{ marginBottom: '20px' }}>
-            <strong style={{ display: 'block', color: '#123047' }}>
-              Contexto institucional
-            </strong>
-            <p className="page-subtitle" style={{ marginBottom: 0 }}>
-              Esta vista permite revisar los profesionales registrados por
-              especialidad y navegar la estructura médica del sistema. Las funciones
-              de edición se integrarán próximamente.
+          <section className="panel">
+            <strong className="data-row-title">Contexto institucional</strong>
+            <p className="page-subtitle">
+              Esta vista permite revisar los profesionales registrados por especialidad y navegar la estructura médica del sistema. Las funciones de edición se integrarán próximamente.
             </p>
           </section>
         ) : null}
 
         <div className="page-nav">
-          <Link to="/dashboard" className="page-nav-link">
-            Volver al inicio
-          </Link>
-          <Link to="/especialidades" className="page-nav-link">
-            Volver a especialidades
-          </Link>
+          <Link to="/dashboard" className="page-nav-link">Volver al inicio</Link>
+          <Link to="/especialidades" className="page-nav-link">Volver a especialidades</Link>
         </div>
 
         {isLoading ? <p className="alert alert-info">Cargando médicos...</p> : null}
@@ -113,26 +94,20 @@ export function MedicosPage() {
           medicos.length > 0 ? (
             <div className="data-list">
               {medicos.map((medico) => (
-                <button
-                  key={medico.id}
-                  type="button"
-                  onClick={() => handleSelect(medico)}
-                  className="action-card"
-                >
-                  <strong style={{ display: 'block', color: '#123047' }}>
-                    {medico.nombreCompleto}
-                  </strong>
-                  <span style={{ color: '#4f677a' }}>
-                    {medico.especialidades.map((item) => item.nombre).join(', ')}
-                  </span>
+                <button key={medico.id} type="button" onClick={() => handleSelect(medico)} className="action-card">
+                  <div>
+                    <h3 className="action-card-title">{medico.nombreCompleto}</h3>
+                    <p className="action-card-description">
+                      {medico.especialidades.map((item) => item.nombre).join(', ')}
+                    </p>
+                  </div>
+                  <span className="action-card-label">{isRecepcion || isAdmin ? 'Ver agenda' : 'Seleccionar'}</span>
                 </button>
               ))}
             </div>
           ) : (
             <section className="empty-state">
-              <p style={{ margin: 0 }}>
-                No encontramos médicos para esta especialidad por ahora.
-              </p>
+              <p style={{ margin: 0 }}>No encontramos médicos para esta especialidad por ahora.</p>
             </section>
           )
         ) : null}

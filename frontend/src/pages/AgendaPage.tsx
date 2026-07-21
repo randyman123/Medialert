@@ -12,7 +12,6 @@ function getToday() {
   const year = now.getFullYear()
   const month = String(now.getMonth() + 1).padStart(2, '0')
   const day = String(now.getDate()).padStart(2, '0')
-
   return `${year}-${month}-${day}`
 }
 
@@ -20,12 +19,7 @@ function addDays(value: string, days: number) {
   const [year, month, day] = value.split('-').map(Number)
   const date = new Date(year, (month ?? 1) - 1, day ?? 1)
   date.setDate(date.getDate() + days)
-
-  const nextYear = date.getFullYear()
-  const nextMonth = String(date.getMonth() + 1).padStart(2, '0')
-  const nextDay = String(date.getDate()).padStart(2, '0')
-
-  return `${nextYear}-${nextMonth}-${nextDay}`
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
 }
 
 function getUpcomingDates(startDate: string, total = 7) {
@@ -41,6 +35,12 @@ interface ReservationConfirmation {
   fecha: string
   inicio: string
   fin: string
+}
+
+function getBlockStatusClass(status: BloqueDisponible['estado']) {
+  if (status === 'DISPONIBLE') return 'status-badge-success'
+  if (status === 'RESERVADO') return 'status-badge-warning'
+  return 'status-badge-danger'
 }
 
 export function AgendaPage() {
@@ -62,9 +62,7 @@ export function AgendaPage() {
   const [motivo, setMotivo] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState('')
-  const [confirmation, setConfirmation] = useState<ReservationConfirmation | null>(
-    null,
-  )
+  const [confirmation, setConfirmation] = useState<ReservationConfirmation | null>(null)
 
   useEffect(() => {
     if (!medicoId) {
@@ -85,25 +83,13 @@ export function AgendaPage() {
         const upcomingDates = getUpcomingDates(getToday())
         const results = await Promise.allSettled(
           upcomingDates.map(async (fecha) => {
-            const data = await agendaService.obtenerPorMedicoYFecha(
-              Number(medicoId),
-              fecha,
-            )
-
-            return {
-              fecha,
-              bloques: data.bloques,
-            }
+            const data = await agendaService.obtenerPorMedicoYFecha(Number(medicoId), fecha)
+            return { fecha, bloques: data.bloques }
           }),
         )
 
         const nextAvailableDays = results
-          .filter(
-            (
-              result,
-            ): result is PromiseFulfilledResult<AvailableDay> =>
-              result.status === 'fulfilled',
-          )
+          .filter((result): result is PromiseFulfilledResult<AvailableDay> => result.status === 'fulfilled')
           .map((result) => result.value)
           .filter((day) => day.bloques.length > 0)
 
@@ -114,11 +100,7 @@ export function AgendaPage() {
           setBloques(nextAvailableDays[0].bloques)
         }
       } catch (loadError) {
-        const message =
-          loadError instanceof Error
-            ? loadError.message
-            : 'No se pudo cargar la agenda'
-
+        const message = loadError instanceof Error ? loadError.message : 'No se pudo cargar la agenda'
         setError(message)
       } finally {
         setIsLoading(false)
@@ -134,13 +116,8 @@ export function AgendaPage() {
       return
     }
 
-    const currentDay =
-      availableDays.find((day) => day.fecha === fechaSeleccionada) ?? availableDays[0]
-
-    if (!currentDay) {
-      return
-    }
-
+    const currentDay = availableDays.find((day) => day.fecha === fechaSeleccionada) ?? availableDays[0]
+    if (!currentDay) return
     setFechaSeleccionada(currentDay.fecha)
     setBloques(currentDay.bloques)
   }, [availableDays, fechaSeleccionada])
@@ -170,43 +147,23 @@ export function AgendaPage() {
 
     try {
       const selectedBloque = bloques.find((bloque) => bloque.id === selectedBloqueId)
-
-      await reservasService.crear({
-        bloqueHorarioId: selectedBloqueId,
-        motivo: motivo.trim(),
-      })
+      await reservasService.crear({ bloqueHorarioId: selectedBloqueId, motivo: motivo.trim() })
 
       if (selectedBloque) {
-        setConfirmation({
-          fecha: fechaSeleccionada,
-          inicio: selectedBloque.inicio,
-          fin: selectedBloque.fin,
-        })
+        setConfirmation({ fecha: fechaSeleccionada, inicio: selectedBloque.inicio, fin: selectedBloque.fin })
       }
 
-      const refreshed = await agendaService.obtenerPorMedicoYFecha(
-        Number(medicoId),
-        fechaSeleccionada,
-      )
-
+      const refreshed = await agendaService.obtenerPorMedicoYFecha(Number(medicoId), fechaSeleccionada)
       setAvailableDays((current) =>
         current
-          .map((day) =>
-            day.fecha === fechaSeleccionada
-              ? { ...day, bloques: refreshed.bloques }
-              : day,
-          )
+          .map((day) => (day.fecha === fechaSeleccionada ? { ...day, bloques: refreshed.bloques } : day))
           .filter((day) => day.bloques.length > 0),
       )
 
       setMotivo('')
       setSelectedBloqueId(null)
     } catch (reservationError) {
-      const message =
-        reservationError instanceof Error
-          ? reservationError.message
-          : 'No se pudo crear la reserva'
-
+      const message = reservationError instanceof Error ? reservationError.message : 'No se pudo crear la reserva'
       setSubmitError(message)
     } finally {
       setIsSubmitting(false)
@@ -220,92 +177,37 @@ export function AgendaPage() {
   return (
     <DashboardLayout>
       <section className="page">
-        <h2 className="page-title">
-          {isRecepcion
-            ? 'Gestión de agenda operativa'
-            : isAdmin
-              ? 'Visualización institucional de agenda'
-              : 'Agenda disponible'}
-        </h2>
-        <p className="page-subtitle" style={{ marginBottom: '8px' }}>
-          Especialidad: <strong>{especialidadNombre || 'Sin especialidad'}</strong>
-        </p>
-        <p className="page-subtitle" style={{ marginTop: 0 }}>
-          Médico: <strong>{medicoNombre || 'Sin médico seleccionado'}</strong>
-        </p>
+        <header className="page-header">
+          <h2 className="page-title">{isRecepcion ? 'Gestión de agenda operativa' : isAdmin ? 'Visualización institucional de agenda' : 'Agenda disponible'}</h2>
+          <p className="page-subtitle">Especialidad: <strong>{especialidadNombre || 'Sin especialidad'}</strong></p>
+          <p className="page-subtitle">Médico: <strong>{medicoNombre || 'Sin médico seleccionado'}</strong></p>
+        </header>
 
         {isRecepcion ? (
-          <section className="panel" style={{ marginBottom: '20px' }}>
-            <strong style={{ display: 'block', color: '#123047' }}>
-              Vista operativa para recepción
-            </strong>
-            <p className="page-subtitle" style={{ marginBottom: 0 }}>
-              Aquí puedes revisar disponibilidad y bloques horarios del profesional.
-              Esta pantalla no corresponde al flujo personal de reserva del paciente.
-            </p>
+          <section className="panel">
+            <strong className="data-row-title">Vista operativa para recepción</strong>
+            <p className="page-subtitle">Aquí puedes revisar disponibilidad y bloques horarios del profesional. Esta pantalla no corresponde al flujo personal de reserva del paciente.</p>
           </section>
         ) : isAdmin ? (
-          <section className="panel" style={{ marginBottom: '20px' }}>
-            <strong style={{ display: 'block', color: '#123047' }}>
-              Vista institucional para administración
-            </strong>
-            <p className="page-subtitle" style={{ marginBottom: 0 }}>
-              Permite supervisar disponibilidad y bloques horarios del profesional
-              desde una perspectiva del sistema, sin exponer acciones de reserva
-              personal.
-            </p>
+          <section className="panel">
+            <strong className="data-row-title">Vista institucional para administración</strong>
+            <p className="page-subtitle">Permite supervisar disponibilidad y bloques horarios del profesional desde una perspectiva del sistema, sin exponer acciones de reserva personal.</p>
           </section>
         ) : null}
 
         <div className="page-nav">
-          <Link to="/dashboard" className="page-nav-link">
-            Volver al inicio
-          </Link>
-          <Link to="/especialidades" className="page-nav-link">
-            Volver a especialidades
-          </Link>
-          <Link
-            to={`/medicos?especialidadId=${especialidadId}&especialidadNombre=${encodeURIComponent(especialidadNombre)}`}
-            className="page-nav-link"
-          >
-            Volver a médicos
-          </Link>
+          <Link to="/dashboard" className="page-nav-link">Volver al inicio</Link>
+          <Link to="/especialidades" className="page-nav-link">Volver a especialidades</Link>
+          <Link to={`/medicos?especialidadId=${especialidadId}&especialidadNombre=${encodeURIComponent(especialidadNombre)}`} className="page-nav-link">Volver a médicos</Link>
         </div>
 
         {confirmation && !isInstitutionalView ? (
-          <section
-            style={{
-              marginBottom: '24px',
-              padding: '20px',
-              borderRadius: '18px',
-              backgroundColor: '#ecfdf5',
-              border: '1px solid #86efac',
-            }}
-          >
-            <h3 style={{ margin: '0 0 8px', color: '#166534' }}>
-              Reserva confirmada
-            </h3>
-            <p style={{ margin: 0, color: '#166534' }}>
-              Tu hora con <strong>{medicoNombre}</strong> quedó agendada para{' '}
-              <strong>{formatDateLabel(confirmation.fecha)}</strong>, de{' '}
-              <strong>{formatHour(confirmation.inicio)}</strong> a{' '}
-              <strong>{formatHour(confirmation.fin)}</strong>.
-            </p>
-
-            <div
-              style={{
-                display: 'flex',
-                gap: '12px',
-                flexWrap: 'wrap',
-                marginTop: '16px',
-              }}
-            >
-              <Link to="/mis-reservas" style={{ color: '#166534', fontWeight: 700 }}>
-                Ir a mis reservas
-              </Link>
-              <Link to="/dashboard" style={{ color: '#166534', fontWeight: 700 }}>
-                Volver al inicio
-              </Link>
+          <section className="confirmation-card">
+            <h3 className="confirmation-title">Reserva confirmada</h3>
+            <p className="confirmation-copy">Tu hora con <strong>{medicoNombre}</strong> quedó agendada para <strong>{formatDateLabel(confirmation.fecha)}</strong>, de <strong>{formatHour(confirmation.inicio)}</strong> a <strong>{formatHour(confirmation.fin)}</strong>.</p>
+            <div className="inline-links">
+              <Link to="/mis-reservas" className="inline-link">Ir a mis reservas</Link>
+              <Link to="/dashboard" className="inline-link">Volver al inicio</Link>
             </div>
           </section>
         ) : null}
@@ -317,152 +219,58 @@ export function AgendaPage() {
           availableDays.length > 0 ? (
             <div className="schedule-grid">
               <section className="panel">
-                <h3 style={{ marginTop: 0, color: '#123047' }}>Días disponibles</h3>
-                <div style={{ display: 'grid', gap: '10px' }}>
+                <h3 className="panel-title">Días disponibles</h3>
+                <div className="selection-list">
                   {availableDays.map((day) => (
-                    <button
-                      key={day.fecha}
-                      type="button"
-                      onClick={() => handleSelectDay(day)}
-                      style={{
-                        border:
-                          fechaSeleccionada === day.fecha
-                            ? '1px solid #16a34a'
-                            : '1px solid #d9e6f2',
-                        backgroundColor:
-                          fechaSeleccionada === day.fecha ? '#e8f7ee' : '#ffffff',
-                        borderRadius: '14px',
-                        padding: '14px 16px',
-                        textAlign: 'left',
-                        cursor: 'pointer',
-                      }}
-                    >
-                      <strong style={{ display: 'block', color: '#123047' }}>
-                        {formatDateLabel(day.fecha)}
-                      </strong>
-                      <span style={{ color: '#4f677a' }}>
-                        {day.bloques.length} horarios disponibles
-                      </span>
+                    <button key={day.fecha} type="button" onClick={() => handleSelectDay(day)} className={`selection-card ${fechaSeleccionada === day.fecha ? 'selection-card-active' : ''}`}>
+                      <span className="selection-card-title">{formatDateLabel(day.fecha)}</span>
+                      <span className="selection-card-copy">{day.bloques.length} horarios disponibles</span>
                     </button>
                   ))}
                 </div>
               </section>
 
               <section className="panel panel-elevated">
-                <h3 style={{ marginTop: 0, color: '#123047' }}>
-                  {isInstitutionalView
-                    ? 'Bloques horarios del día seleccionado'
-                    : 'Horarios del día seleccionado'}
-                </h3>
-                <p className="page-subtitle" style={{ marginTop: 0 }}>
-                  {fechaSeleccionada
-                    ? isInstitutionalView
-                      ? `Mostrando bloques para ${formatDateLabel(fechaSeleccionada)}.`
-                      : `Mostrando horarios para ${formatDateLabel(fechaSeleccionada)}.`
-                    : 'Selecciona un día para ver sus horarios.'}
-                </p>
+                <h3 className="panel-title">{isInstitutionalView ? 'Bloques horarios del día seleccionado' : 'Horarios del día seleccionado'}</h3>
+                <p className="page-subtitle">{fechaSeleccionada ? `Mostrando horarios para ${formatDateLabel(fechaSeleccionada)}.` : 'Selecciona un día para ver sus horarios.'}</p>
 
                 {isInstitutionalView && fechaSeleccionada ? (
-                  <section
-                    className="panel"
-                    style={{ marginTop: '20px', marginBottom: '20px' }}
-                  >
-                    <strong style={{ display: 'block', color: '#123047' }}>
-                      Resumen del día
-                    </strong>
-                    <p className="page-subtitle" style={{ margin: '8px 0 0' }}>
-                      {bloquesDisponibles} bloques disponibles y {bloquesNoDisponibles}{' '}
-                      no disponibles para {formatDateLabel(fechaSeleccionada)}.
-                    </p>
+                  <section className="panel">
+                    <strong className="data-row-title">Resumen del día</strong>
+                    <p className="page-subtitle">{bloquesDisponibles} bloques disponibles y {bloquesNoDisponibles} no disponibles para {formatDateLabel(fechaSeleccionada)}.</p>
                   </section>
                 ) : null}
 
-                <div style={{ display: 'grid', gap: '12px', marginTop: '20px' }}>
+                <div className="selection-list">
                   {bloques.map((bloque) => (
                     <button
                       key={bloque.id}
                       type="button"
-                      onClick={
-                        isInstitutionalView
-                          ? undefined
-                          : () => {
-                              setSelectedBloqueId(bloque.id)
-                              setSubmitError('')
-                              setConfirmation(null)
-                            }
-                      }
-                      style={{
-                        border: '1px solid #d9e6f2',
-                        backgroundColor:
-                          !isInstitutionalView && selectedBloqueId === bloque.id
-                            ? '#e8f7ee'
-                            : '#ffffff',
-                        borderRadius: '14px',
-                        padding: '16px',
-                        textAlign: 'left',
-                        cursor: isInstitutionalView ? 'default' : 'pointer',
+                      onClick={isInstitutionalView ? undefined : () => {
+                        setSelectedBloqueId(bloque.id)
+                        setSubmitError('')
+                        setConfirmation(null)
                       }}
+                      className={`selection-card ${!isInstitutionalView && selectedBloqueId === bloque.id ? 'selection-card-active' : ''}`}
                     >
-                      <strong style={{ display: 'block', color: '#123047' }}>
-                        {formatHour(bloque.inicio)} - {formatHour(bloque.fin)}
-                      </strong>
-                      <span style={{ color: '#4f677a' }}>{bloque.estado}</span>
+                      <span className="selection-card-title">{formatHour(bloque.inicio)} - {formatHour(bloque.fin)}</span>
+                      <div className="selection-card-tags">
+                        <span className={`status-badge ${getBlockStatusClass(bloque.estado)}`}>{bloque.estado}</span>
+                        <span className="status-badge status-badge-neutral">PRESENCIAL</span>
+                      </div>
                     </button>
                   ))}
                 </div>
 
-                {isRecepcion && bloques.length > 0 ? (
-                  <section className="panel" style={{ marginTop: '24px' }}>
-                    <h4 style={{ marginTop: 0, color: '#123047' }}>Uso de esta vista</h4>
-                    <p className="page-subtitle" style={{ marginBottom: 0 }}>
-                      Recepción puede consultar la agenda del profesional, identificar
-                      disponibilidad y orientar la coordinación de atención sin mostrar
-                      el formulario de reserva personal del paciente.
-                    </p>
-                  </section>
-                ) : null}
-
-                {isAdmin && bloques.length > 0 ? (
-                  <section className="panel" style={{ marginTop: '24px' }}>
-                    <h4 style={{ marginTop: 0, color: '#123047' }}>
-                      Supervisión institucional
-                    </h4>
-                    <p className="page-subtitle" style={{ marginBottom: 0 }}>
-                      Administración puede revisar la disponibilidad visible del
-                      profesional y la estructura de bloques horarios del sistema. Las
-                      funciones de edición se integrarán próximamente.
-                    </p>
-                  </section>
-                ) : null}
-
                 {!isInstitutionalView && bloques.length > 0 ? (
-                  <section className="panel" style={{ marginTop: '24px' }}>
-                    <h4 style={{ marginTop: 0, color: '#123047' }}>Reservar horario</h4>
-
+                  <section className="panel">
+                    <h4 className="panel-title">Reservar horario</h4>
                     <label className="form-label">
                       Motivo
-                      <input
-                        type="text"
-                        value={motivo}
-                        onChange={(event) => setMotivo(event.target.value)}
-                        placeholder="Ej: control general"
-                        className="field"
-                      />
+                      <input type="text" value={motivo} onChange={(event) => setMotivo(event.target.value)} placeholder="Ej: control general" className="field" />
                     </label>
-
-                    {submitError ? (
-                      <p className="alert alert-error" style={{ marginTop: '16px' }}>
-                        {submitError}
-                      </p>
-                    ) : null}
-
-                    <button
-                      type="button"
-                      onClick={handleReservar}
-                      disabled={isSubmitting}
-                      className="btn btn-success"
-                      style={{ marginTop: '16px' }}
-                    >
+                    {submitError ? <p className="alert alert-error">{submitError}</p> : null}
+                    <button type="button" onClick={handleReservar} disabled={isSubmitting} className="btn btn-success">
                       {isSubmitting ? 'Reservando...' : 'Reservar'}
                     </button>
                   </section>
@@ -471,13 +279,8 @@ export function AgendaPage() {
             </div>
           ) : (
             <section className="empty-state">
-              <h3 style={{ marginTop: 0, color: '#123047' }}>
-                Sin horarios próximos disponibles
-              </h3>
-              <p style={{ margin: 0, color: '#4f677a' }}>
-                Este médico no tiene horas visibles en los próximos días. Puedes volver
-                a médicos y revisar otra opción.
-              </p>
+              <h3 style={{ marginTop: 0, color: '#123047' }}>Sin horarios próximos disponibles</h3>
+              <p style={{ margin: 0, color: '#4f677a' }}>Este médico no tiene horas visibles en los próximos días. Puedes volver a médicos y revisar otra opción.</p>
             </section>
           )
         ) : null}

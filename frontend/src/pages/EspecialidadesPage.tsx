@@ -2,10 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
 import { DashboardLayout } from '../layouts/DashboardLayout'
-import {
-  especialidadesService,
-  type Especialidad,
-} from '../services/especialidades.service'
+import { especialidadesService, type Especialidad } from '../services/especialidades.service'
 
 export function EspecialidadesPage() {
   const navigate = useNavigate()
@@ -23,9 +20,7 @@ export function EspecialidadesPage() {
         setEspecialidades(data)
       } catch (loadError) {
         const message =
-          loadError instanceof Error
-            ? loadError.message
-            : 'No se pudieron cargar las especialidades'
+          loadError instanceof Error ? loadError.message : 'No se pudieron cargar las especialidades'
 
         setError(message)
       } finally {
@@ -50,11 +45,7 @@ export function EspecialidadesPage() {
       <section className="page">
         <header className="page-header">
           <h2 className="page-title">
-            {isRecepcion
-              ? 'Gestión de agenda'
-              : isAdmin
-                ? 'Gestión médica institucional'
-                : 'Especialidades'}
+            {isRecepcion ? 'Gestión de agenda' : isAdmin ? 'Gestión médica institucional' : 'Especialidades'}
           </h2>
           <p className="page-subtitle">
             {isRecepcion
@@ -66,24 +57,17 @@ export function EspecialidadesPage() {
         </header>
 
         {isRecepcion ? (
-          <section className="panel" style={{ marginBottom: '20px' }}>
-            <strong style={{ display: 'block', color: '#123047' }}>
-              Vista operativa de recepción
-            </strong>
-            <p className="page-subtitle" style={{ marginBottom: 0 }}>
-              Este módulo permite navegar la agenda clínica por especialidad y médico
-              para consultar bloques horarios disponibles.
+          <section className="panel">
+            <strong className="data-row-title">Vista operativa de recepción</strong>
+            <p className="page-subtitle">
+              Este módulo permite navegar la agenda clínica por especialidad y médico para consultar bloques horarios disponibles.
             </p>
           </section>
         ) : isAdmin ? (
-          <section className="panel" style={{ marginBottom: '20px' }}>
-            <strong style={{ display: 'block', color: '#123047' }}>
-              Vista institucional para administración del sistema
-            </strong>
-            <p className="page-subtitle" style={{ marginBottom: 0 }}>
-              Permite visualizar la estructura médica registrada y supervisar las
-              especialidades disponibles. Las funciones de edición se integrarán
-              próximamente.
+          <section className="panel">
+            <strong className="data-row-title">Vista institucional para administración del sistema</strong>
+            <p className="page-subtitle">
+              Permite visualizar la estructura médica registrada y supervisar las especialidades disponibles. Las funciones de edición se integrarán próximamente.
             </p>
           </section>
         ) : null}
@@ -107,7 +91,13 @@ export function EspecialidadesPage() {
                   onClick={() => handleSelect(especialidad)}
                   className="action-card"
                 >
-                  {especialidad.nombre}
+                  <div>
+                    <h3 className="action-card-title">{especialidad.nombre}</h3>
+                    <p className="action-card-description">
+                      Ver médicos asociados y revisar disponibilidad desde esta especialidad.
+                    </p>
+                  </div>
+                  <span className="action-card-label">Ver médicos</span>
                 </button>
               ))}
             </div>
