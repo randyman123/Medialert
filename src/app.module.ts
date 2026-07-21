@@ -18,6 +18,7 @@ import { AgendaModule } from './agenda/agenda.module';
 import { MisArchivosModule } from './mis-archivos/mis-archivos.module';
 import { TelemedicinaModule } from './telemedicina/telemedicina.module';
 import { PastilleroModule } from './pastillero/pastillero.module';
+import { AwsModule } from './aws/aws.module';
 
 @Module({
   imports: [
@@ -54,6 +55,7 @@ import { PastilleroModule } from './pastillero/pastillero.module';
     MisArchivosModule,
     TelemedicinaModule,
     PastilleroModule,
+    AwsModule,
   ],
 })
 export class AppModule {}

@@ -1,4 +1,9 @@
-import { Controller, ForbiddenException, Post, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  ForbiddenException,
+  Post,
+  UseGuards,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { SeedService } from './seed.service';
