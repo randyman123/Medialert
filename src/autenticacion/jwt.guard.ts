@@ -6,16 +6,30 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { Reflector } from '@nestjs/core';
 import * as jwt from 'jsonwebtoken';
 import { RolUsuario } from '../usuarios/rol-usuario.enum';
+import { IS_PUBLIC_KEY } from './public.decorator';
 
 export type JwtUsuario = { id: number; rol: RolUsuario };
 
 @Injectable()
 export class JwtGuard implements CanActivate {
-  constructor(private readonly cfg: ConfigService) {}
+  constructor(
+    private readonly cfg: ConfigService,
+    private readonly reflector: Reflector,
+  ) {}
 
   canActivate(ctx: ExecutionContext): boolean {
+    const isPublic = this.reflector.getAllAndOverride<boolean>(IS_PUBLIC_KEY, [
+      ctx.getHandler(),
+      ctx.getClass(),
+    ]);
+
+    if (isPublic) {
+      return true;
+    }
+
     const req = ctx.switchToHttp().getRequest();
 
     const auth = req.headers['authorization'] as string | undefined;
@@ -38,12 +52,10 @@ export class JwtGuard implements CanActivate {
 
       const payload = decoded as { sub?: unknown; rol?: unknown };
 
-      // 🔹 Validar rol
       if (typeof payload.rol !== 'string') {
         throw new UnauthorizedException('Token inválido');
       }
 
-      // 🔹 sub puede venir string o number (por bigint)
       const rawSub = payload.sub;
 
       const id =
@@ -57,7 +69,6 @@ export class JwtGuard implements CanActivate {
         throw new UnauthorizedException('Token inválido');
       }
 
-      // Guardamos usuario en request
       req.usuario = {
         id,
         rol: payload.rol as RolUsuario,

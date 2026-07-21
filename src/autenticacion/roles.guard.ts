@@ -8,12 +8,22 @@ import { Reflector } from '@nestjs/core';
 import { ROLES_KEY } from './roles.decorator';
 import { RolUsuario } from '../usuarios/rol-usuario.enum';
 import { JwtUsuario } from './jwt.guard';
+import { IS_PUBLIC_KEY } from './public.decorator';
 
 @Injectable()
 export class RolesGuard implements CanActivate {
   constructor(private readonly reflector: Reflector) {}
 
   canActivate(ctx: ExecutionContext): boolean {
+    const isPublic = this.reflector.getAllAndOverride<boolean>(IS_PUBLIC_KEY, [
+      ctx.getHandler(),
+      ctx.getClass(),
+    ]);
+
+    if (isPublic) {
+      return true;
+    }
+
     const roles = this.reflector.getAllAndOverride<RolUsuario[]>(ROLES_KEY, [
       ctx.getHandler(),
       ctx.getClass(),

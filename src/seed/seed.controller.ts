@@ -6,6 +6,7 @@ import { JwtGuard } from '../autenticacion/jwt.guard';
 import { RolesGuard } from '../autenticacion/roles.guard';
 import { Roles } from '../autenticacion/roles.decorator';
 import { RolUsuario } from '../usuarios/rol-usuario.enum';
+import { Public } from '../autenticacion/public.decorator';
 
 @ApiTags('seed')
 @Controller('seed')
@@ -25,6 +26,7 @@ export class SeedController {
   }
 
   @Post('bootstrap')
+  @Public()
   @ApiOperation({
     summary:
       'Inicializar seed base sin autenticacion solo cuando SEED_BOOTSTRAP_ENABLED=true',
