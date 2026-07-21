@@ -8,6 +8,7 @@ import { Medico } from '../medicos/entities/medico.entity';
 import { Especialidad } from '../especialidades/entities/especialidad.entity';
 import { CentroMedico } from '../centros-medicos/entities/centro-medico.entity';
 import { BloqueHorario } from '../bloques-horarios/entities/bloques-horario.entity';
+import { Reserva } from '../reservas/entities/reserva.entity';
 
 @Module({
   imports: [
@@ -18,6 +19,7 @@ import { BloqueHorario } from '../bloques-horarios/entities/bloques-horario.enti
       Especialidad,
       CentroMedico,
       BloqueHorario,
+      Reserva,
     ]),
   ],
   controllers: [SeedController],
